@@ -1,0 +1,81 @@
+{
+  "format": "aiag-backup-manifest",
+  "version": 1,
+  "createdAt": "2026-05-28T04:02:03.383Z",
+  "source": {
+    "appName": "advance-ingredients-website",
+    "appVersion": "0.1.0",
+    "database": "project_db",
+    "host": "127.0.0.1"
+  },
+  "contents": {
+    "database": {
+      "file": "db.core.bundle.json",
+      "sha256": "1ec25e32c90873703eaddbadf063519e0b11fb9ce5520703f9d80e3f0f60837f",
+      "tables": {
+        "users": {
+          "rowCount": 6,
+          "sha256": "6a1668db466c1bbdb6b367dd8075c8756846bf481f5fcefaea0ea68de3666f5e"
+        },
+        "orders": {
+          "rowCount": 11,
+          "sha256": "86c2f74c22e7edd9ab76aec8f17280c78f699e3154e7a75dd21a5ed1a0a6d917"
+        },
+        "order_visibility": {
+          "rowCount": 33,
+          "sha256": "296b916ec350ac1d35738df70f82cdb631b41d2087876f0be8963409b281b589"
+        },
+        "order_files": {
+          "rowCount": 10,
+          "sha256": "ed53985ad995b3f6ca15e46a3015ba2241575c2fd16cb24497c810b79ce0de52"
+        },
+        "role_field_visibility": {
+          "rowCount": 92,
+          "sha256": "4bd146ca48c3f03759415697e4920c93d2cdf21c8aa79820f1ea87e07241f1fd"
+        },
+        "hard_denied_info": {
+          "rowCount": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "order_options": {
+          "rowCount": 6,
+          "sha256": "11844d7971163870fb6db2f1b018a69ee6fc23849840377d6adcbbe8f68f831b"
+        },
+        "accountant_files": {
+          "rowCount": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "order_month": {
+          "rowCount": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "order_quarter": {
+          "rowCount": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      }
+    },
+    "storage": {
+      "file": "storage.manifest.json",
+      "sha256": "3dd8509bbd437dbc5c5539924e4908889d947895f231dc43eb9851ed323a24ed",
+      "roots": {
+        "orders": {
+          "snapshotPath": "storage/orders",
+          "rootExists": true,
+          "fileCount": 10,
+          "totalBytes": 3894523
+        },
+        "accountant": {
+          "snapshotPath": "storage/accountant",
+          "rootExists": true,
+          "fileCount": 0,
+          "totalBytes": 0
+        }
+      }
+    }
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "manifestSha256": "fc6961cbd43eac375a2970be6b76324dc34e53a8f11dde39a088b4b02b55eb18"
+  }
+}

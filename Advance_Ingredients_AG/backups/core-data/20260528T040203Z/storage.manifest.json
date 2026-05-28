@@ -1,0 +1,78 @@
+{
+  "format": "aiag-storage-manifest",
+  "version": 1,
+  "createdAt": "2026-05-28T04:02:03.383Z",
+  "roots": {
+    "orders": {
+      "sourcePath": "C:/临时储存/钊/Advance_Ingredients_AG/Advance_Ingredients_AG/storage/orders",
+      "snapshotPath": "storage/orders",
+      "rootExists": true,
+      "totalBytes": 3894523,
+      "fileCount": 10,
+      "files": [
+        {
+          "relativePath": "unassigned/C263-11/0efe31be-2254-4f44-9840-82193553ff0c.pdf",
+          "size": 250437,
+          "sha256": "2000fa395f3229158205471cd23e0dd51290936ad96e752de50d499de8af3a8a"
+        },
+        {
+          "relativePath": "unassigned/C263-11/77b32cef-7a14-459c-9865-28b9dc17d99d.pdf",
+          "size": 213880,
+          "sha256": "383477fbcdad519533c9b365a0da844187317e8fc1d4db8f0bf5ca6863d70fbc"
+        },
+        {
+          "relativePath": "unassigned/C263-11/9832c86e-beea-4fc8-a499-e2dd4926ac21.pdf",
+          "size": 73666,
+          "sha256": "53beb429239ec75cf282504b74cccacdd99014d3c69cf9e8c7e22ed2338d86a4"
+        },
+        {
+          "relativePath": "unassigned/C263-11/b1f92f35-5062-4454-803d-c48237610cdf.pdf",
+          "size": 422814,
+          "sha256": "ce94cd3ce8b4536d6cc0888bfc6a5ab2338ad29d1e32f6044888cd576e67eb0c"
+        },
+        {
+          "relativePath": "unassigned/C263-11/ddb1056b-3311-457f-be0c-ee2b5c663eb7.pdf",
+          "size": 241952,
+          "sha256": "5b8566883c88227f189ce0933d2376c3f5de2ab8b5b5563ca0d46ae2a4432c91"
+        },
+        {
+          "relativePath": "unassigned/C263-13/52933578-f2e8-4748-9eb9-dc6ad53b7e2f.pdf",
+          "size": 264351,
+          "sha256": "8c0f5e974238fd1ddaffc07aadf1cfde204138178557f237d40cfda070b2b019"
+        },
+        {
+          "relativePath": "unassigned/C263-13/bf61574f-68d5-4e67-8b98-25ca06e78367.pdf",
+          "size": 249585,
+          "sha256": "7528a97486a2feac94ac7b32950a677fb38aac7f2e0ca008329213f6a3bf3e51"
+        },
+        {
+          "relativePath": "unassigned/C263-13/d8d4a916-92a3-47dc-ad16-1eabf60bd79c.pdf",
+          "size": 1878159,
+          "sha256": "f5b148b541fb630b2495e6d306d8918803c536042a265c6f6bc78ce4929c1f7a"
+        },
+        {
+          "relativePath": "unassigned/C263-13/f081f35f-9252-421d-99fa-aafa7cb3b57b.pdf",
+          "size": 219812,
+          "sha256": "78d339e96f0f2fb880695e24412ef225df8cdfdf357b097d451e4fac8dc3781d"
+        },
+        {
+          "relativePath": "unassigned/C263-13/ff7e3fd0-141e-40b9-86d2-b2d65925249e.pdf",
+          "size": 79867,
+          "sha256": "727050911aa09fdfbb3203019f5427cc6aeef29f7c17ed3e539e3a990d97a147"
+        }
+      ]
+    },
+    "accountant": {
+      "sourcePath": "C:/临时储存/钊/Advance_Ingredients_AG/Advance_Ingredients_AG/storage/accountant",
+      "snapshotPath": "storage/accountant",
+      "rootExists": true,
+      "totalBytes": 0,
+      "fileCount": 0,
+      "files": []
+    }
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "manifestSha256": "07ec30518e1fc063f76e42eb43ce8b5a30b8591034a0e6f2142fa836c0b9ed12"
+  }
+}

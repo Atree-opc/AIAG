@@ -1,0 +1,168 @@
+import { NextResponse } from 'next/server'
+import pool from '@/lib/db'
+import { withAuth } from '@/lib/middleware-helpers'
+import { JWTPayload } from '@/types'
+import { getFilePath, deleteFile } from '@/lib/file-storage'
+import fs from 'fs'
+
+async function canAccessOrder(containerNumber: string, user: JWTPayload): Promise<boolean> {
+  if (user.role === 'admin' || user.role === 'accountant') return true
+  if (user.role === 'staff') {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM order_visibility WHERE container_number=$1 AND role='staff'`,
+      [containerNumber]
+    )
+    return rows.length > 0
+  }
+  if (user.role === 'supplier') {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM orders o
+       JOIN order_visibility ov ON o.container_number=ov.container_number
+       WHERE o.container_number=$1 AND ov.role='supplier' AND o.supplier_id=$2`,
+      [containerNumber, user.userId]
+    )
+    return rows.length > 0
+  }
+  if (user.role === 'customer') {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM orders o
+       JOIN order_visibility ov ON o.container_number=ov.container_number
+       WHERE o.container_number=$1 AND ov.role='customer' AND o.customer_id=$2`,
+      [containerNumber, user.userId]
+    )
+    return rows.length > 0
+  }
+  return false
+}
+
+// GET /api/files/[container]/[fileId] — download a file
+export const GET = withAuth(async (_req, user: JWTPayload, context) => {
+  const container = context?.params?.container as string
+  const fileId = context?.params?.fileId as string
+
+  if (!(await canAccessOrder(container, user))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    // Build visibility filter for non-admin/staff
+    let visibilityFilter = ''
+    if (user.role === 'supplier') visibilityFilter = 'AND f.visible_to_supplier = true'
+    else if (user.role === 'customer') visibilityFilter = 'AND f.visible_to_customer = true'
+    else if (user.role === 'accountant') visibilityFilter = 'AND f.visible_to_accountant = true'
+
+    const { rows } = await pool.query(
+      `SELECT f.*, om.year, om.month
+       FROM order_files f
+       LEFT JOIN order_month om ON f.container_number = om.container_number
+       WHERE f.file_id=$1 AND f.container_number=$2 ${visibilityFilter}`,
+      [fileId, container]
+    )
+    if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const file = rows[0]
+    const filePath = getFilePath(file.year ?? null, file.month ?? null, container, file.stored_name)
+
+    if (!fs.existsSync(filePath)) {
+      return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
+    }
+
+    const buffer = fs.readFileSync(filePath)
+
+    // Always use octet-stream regardless of stored MIME type.
+    // This prevents client-spoofed MIME types from being reflected back,
+    // and forces browsers to download rather than render the file.
+    return new Response(buffer, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(file.filename)}"`,
+        'Content-Length': String(buffer.length),
+      },
+    })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+})
+
+// DELETE /api/files/[container]/[fileId] — delete a file (admin, staff only)
+export const DELETE = withAuth(async (_req, user: JWTPayload, context) => {
+  const container = context?.params?.container as string
+  const fileId = context?.params?.fileId as string
+
+  if (!(await canAccessOrder(container, user))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT f.*, om.year, om.month
+       FROM order_files f
+       LEFT JOIN order_month om ON f.container_number = om.container_number
+       WHERE f.file_id=$1 AND f.container_number=$2`,
+      [fileId, container]
+    )
+    if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const file = rows[0]
+    deleteFile(file.year ?? null, file.month ?? null, container, file.stored_name)
+
+    await pool.query(`DELETE FROM order_files WHERE file_id=$1`, [fileId])
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}, ['admin', 'staff'])
+
+// PATCH /api/files/[container]/[fileId] — rename or update visibility (admin, staff only)
+export const PATCH = withAuth(async (req, user: JWTPayload, context) => {
+  const container = context?.params?.container as string
+  const fileId = context?.params?.fileId as string
+
+  if (!(await canAccessOrder(container, user))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    const body = await req.json()
+    const updates: string[] = []
+    const values: unknown[] = []
+
+    if (body.filename !== undefined) {
+      const name = String(body.filename).trim()
+      if (!name) return NextResponse.json({ error: 'filename cannot be empty' }, { status: 400 })
+      updates.push(`filename=$${values.length + 1}`)
+      values.push(name)
+    }
+    if (body.visible_to_customer !== undefined) {
+      updates.push(`visible_to_customer=$${values.length + 1}`)
+      values.push(Boolean(body.visible_to_customer))
+    }
+    if (body.visible_to_supplier !== undefined) {
+      updates.push(`visible_to_supplier=$${values.length + 1}`)
+      values.push(Boolean(body.visible_to_supplier))
+    }
+    if (body.visible_to_accountant !== undefined) {
+      updates.push(`visible_to_accountant=$${values.length + 1}`)
+      values.push(Boolean(body.visible_to_accountant))
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    }
+
+    values.push(fileId, container)
+    const { rows } = await pool.query(
+      `UPDATE order_files SET ${updates.join(', ')}
+       WHERE file_id=$${values.length - 1} AND container_number=$${values.length}
+       RETURNING *`,
+      values
+    )
+    if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}, ['admin', 'staff'])

@@ -1,0 +1,1535 @@
+{
+  "format": "aiag-core-data-bundle",
+  "version": 1,
+  "createdAt": "2026-05-28T04:02:03.383Z",
+  "source": {
+    "appName": "advance-ingredients-website",
+    "appVersion": "0.1.0",
+    "database": "project_db",
+    "host": "127.0.0.1"
+  },
+  "tables": {
+    "users": {
+      "columns": [
+        "user_id",
+        "name",
+        "role",
+        "password_hash",
+        "company_name",
+        "address",
+        "city",
+        "country",
+        "created_at"
+      ],
+      "rowCount": 6,
+      "sha256": "6a1668db466c1bbdb6b367dd8075c8756846bf481f5fcefaea0ea68de3666f5e",
+      "rows": [
+        {
+          "user_id": "13be817c-8f55-44f2-986e-0ecf13dbd888",
+          "name": "accountant",
+          "role": "accountant",
+          "password_hash": "$2b$12$jB6FJwkBVtx6e3CF6vm41.6onzonazCczoILNxNxFzPHwprP9UNgG",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-14 06:28:19.385796+00"
+        },
+        {
+          "user_id": "5fb65753-062f-4e43-8c06-51f2721f86cc",
+          "name": "admin",
+          "role": "admin",
+          "password_hash": "$2b$12$CSdSrals/6TAiN0kmBrYS.2m6to5Gc07zfqaDxTZObgGB5arPNboy",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-13 12:28:47.027879+00"
+        },
+        {
+          "user_id": "869743c3-3b07-4e8b-a483-407ad2c5595c",
+          "name": "nongdu",
+          "role": "customer",
+          "password_hash": "$2b$12$Qt.sz2AblyhNuFsmIlq31uqo4YpU9/81V9JBAOwOjfWnSpmVR8XoC",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-14 01:37:50.257441+00"
+        },
+        {
+          "user_id": "45b53c14-1768-45ca-b3c2-3d337a1bd6d6",
+          "name": "yifan",
+          "role": "customer",
+          "password_hash": "$2b$12$kR9.68yt3TGwDYZZn/SxZeBprWoACVLRJallD/xX/eJMT5WoXAs3.",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-14 01:37:44.637816+00"
+        },
+        {
+          "user_id": "243643f4-c88a-476d-a667-a0b502924b33",
+          "name": "staff",
+          "role": "staff",
+          "password_hash": "$2b$12$NRJQc1e/idLgaS558l5fo.02ZbHxnrDhKVpiwbWCAMFsKJAw8GMqa",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-13 12:28:47.22636+00"
+        },
+        {
+          "user_id": "1352c4b2-47ad-4dc1-9b99-6882db9ea98f",
+          "name": "dairyfood",
+          "role": "supplier",
+          "password_hash": "$2b$12$buB4Qz.f78zUVeTjWHxtZeLu0G22cKPsYTrzLZkV7I0GQv2PzHOR2",
+          "company_name": null,
+          "address": null,
+          "city": null,
+          "country": null,
+          "created_at": "2026-05-14 01:37:17.857386+00"
+        }
+      ]
+    },
+    "orders": {
+      "columns": [
+        "container_number",
+        "contract_id",
+        "customer_id",
+        "supplier_id",
+        "bl",
+        "brand",
+        "product",
+        "price",
+        "quantity",
+        "quantity_unit",
+        "loading_date",
+        "etd",
+        "ship_on_board_date",
+        "eta",
+        "batch_no",
+        "production_date",
+        "df_invoice_no",
+        "df_ai_price",
+        "freight_forwarder",
+        "freight_forwarder_method",
+        "lc_number",
+        "port_of_loading",
+        "port_of_discharge",
+        "status",
+        "remarks",
+        "belonged_month",
+        "belonged_quarter",
+        "parity",
+        "packing",
+        "payment_terms",
+        "origin",
+        "shelf_life",
+        "invoice_no",
+        "lc_issue_date",
+        "lc_bank_name",
+        "lc_bank_bic",
+        "lc_bank_address",
+        "buyer_name",
+        "buyer_address",
+        "is_organic",
+        "tc_contract_no",
+        "tc_invoice_no",
+        "tc_seller",
+        "tc_buyer",
+        "created_at"
+      ],
+      "rowCount": 11,
+      "sha256": "86c2f74c22e7edd9ab76aec8f17280c78f699e3154e7a75dd21a5ed1a0a6d917",
+      "rows": [
+        {
+          "container_number": "C263-11",
+          "contract_id": "AC260301",
+          "customer_id": "869743c3-3b07-4e8b-a483-407ad2c5595c",
+          "supplier_id": "1352c4b2-47ad-4dc1-9b99-6882db9ea98f",
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "15.1000",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": null,
+          "etd": "2026-03-28",
+          "ship_on_board_date": "2026-03-30",
+          "eta": "2026-04-30",
+          "batch_no": "WPC1802260154",
+          "production_date": "2026-02-17",
+          "df_invoice_no": "DR262602",
+          "df_ai_price": "13.9000",
+          "freight_forwarder": "TCI",
+          "freight_forwarder_method": null,
+          "lc_number": "571LC2600112",
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "FFAU2955049",
+          "belonged_month": "2026-03",
+          "belonged_quarter": "2026-Q1",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 08:22:17.041583+00"
+        },
+        {
+          "container_number": "C263-12",
+          "contract_id": "AC260302",
+          "customer_id": "869743c3-3b07-4e8b-a483-407ad2c5595c",
+          "supplier_id": "1352c4b2-47ad-4dc1-9b99-6882db9ea98f",
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "15.1000",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": null,
+          "etd": null,
+          "ship_on_board_date": null,
+          "eta": null,
+          "batch_no": null,
+          "production_date": null,
+          "df_invoice_no": null,
+          "df_ai_price": "13.9000",
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": null,
+          "belonged_month": "2026-03",
+          "belonged_quarter": "2026-Q1",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 08:22:17.041583+00"
+        },
+        {
+          "container_number": "C263-13",
+          "contract_id": "AC260303",
+          "customer_id": "45b53c14-1768-45ca-b3c2-3d337a1bd6d6",
+          "supplier_id": "1352c4b2-47ad-4dc1-9b99-6882db9ea98f",
+          "bl": null,
+          "brand": "FOONEXUS",
+          "product": "bio lactose",
+          "price": "3.3000",
+          "quantity": "25.00",
+          "quantity_unit": "MT",
+          "loading_date": "2001-11-02",
+          "etd": "2026-03-17",
+          "ship_on_board_date": "2026-03-24",
+          "eta": "2026-04-30",
+          "batch_no": "LAC1302260142",
+          "production_date": "2026-02-12",
+          "df_invoice_no": "DR262547",
+          "df_ai_price": "2.9000",
+          "freight_forwarder": "TCI",
+          "freight_forwarder_method": null,
+          "lc_number": "LC1900326000286",
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "SEGU6551041",
+          "belonged_month": "2026-03",
+          "belonged_quarter": "2026-Q1",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 08:22:17.041583+00"
+        },
+        {
+          "container_number": "C263-14",
+          "contract_id": "AC260401",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "16.6000",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "2026-04-08",
+          "etd": "2026-04-17",
+          "ship_on_board_date": null,
+          "eta": "2026-05-30",
+          "batch_no": "WPC2003260214",
+          "production_date": "2026-03-19",
+          "df_invoice_no": "DR262693",
+          "df_ai_price": "15.4000",
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "YMMU6355495",
+          "belonged_month": "2026-04",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 06:37:30.09453+00"
+        },
+        {
+          "container_number": "C263-15",
+          "contract_id": "AC260402",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "16.6000",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "2026-04-20",
+          "etd": "2026-04-26",
+          "ship_on_board_date": null,
+          "eta": "2026-06-20",
+          "batch_no": "WPC0804260246",
+          "production_date": "2026-04-07",
+          "df_invoice_no": "DR262760",
+          "df_ai_price": "15.4000",
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "YMMU6359103",
+          "belonged_month": "2026-04",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 06:37:30.09453+00"
+        },
+        {
+          "container_number": "C263-16",
+          "contract_id": "AC260403",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "16.6000",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "2026-04-29",
+          "etd": "2026-07-02",
+          "ship_on_board_date": null,
+          "eta": "2026-07-02",
+          "batch_no": "WPC1404260264",
+          "production_date": "2026-04-13",
+          "df_invoice_no": "DR262830",
+          "df_ai_price": "15.4000",
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "MAGU5657374",
+          "belonged_month": "2026-04",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 06:37:30.09453+00"
+        },
+        {
+          "container_number": "C263-17",
+          "contract_id": "AC260404",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "FOONEXUS",
+          "product": "bio lactose",
+          "price": "3.3000",
+          "quantity": "25.00",
+          "quantity_unit": "MT",
+          "loading_date": "2026-04-15",
+          "etd": "2026-04-23",
+          "ship_on_board_date": null,
+          "eta": "2026-06-06",
+          "batch_no": "LAC2503260229",
+          "production_date": "2026-03-24",
+          "df_invoice_no": "DR262737",
+          "df_ai_price": "2.4000",
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": "OCGU8013217",
+          "belonged_month": "2026-04",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 06:37:30.09453+00"
+        },
+        {
+          "container_number": "C263-18",
+          "contract_id": "AC260501",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "17.7500",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "1969-12-31",
+          "etd": null,
+          "ship_on_board_date": null,
+          "eta": null,
+          "batch_no": null,
+          "production_date": null,
+          "df_invoice_no": null,
+          "df_ai_price": null,
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": null,
+          "belonged_month": "2026-05",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 03:16:27.101506+00"
+        },
+        {
+          "container_number": "C263-19",
+          "contract_id": "AC260502",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "17.7500",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "1970-01-01",
+          "etd": null,
+          "ship_on_board_date": null,
+          "eta": null,
+          "batch_no": null,
+          "production_date": null,
+          "df_invoice_no": null,
+          "df_ai_price": null,
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": null,
+          "belonged_month": "2026-05",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 03:16:27.101506+00"
+        },
+        {
+          "container_number": "C263-20",
+          "contract_id": "AC260503",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "LVEO",
+          "product": "WPCi80",
+          "price": "17.7500",
+          "quantity": "18.00",
+          "quantity_unit": "MT",
+          "loading_date": "1970-01-01",
+          "etd": null,
+          "ship_on_board_date": null,
+          "eta": null,
+          "batch_no": null,
+          "production_date": null,
+          "df_invoice_no": null,
+          "df_ai_price": null,
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": null,
+          "belonged_month": "2026-05",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 03:16:27.101506+00"
+        },
+        {
+          "container_number": "C263-21",
+          "contract_id": "AC260504",
+          "customer_id": null,
+          "supplier_id": null,
+          "bl": null,
+          "brand": "FOONEXUS",
+          "product": "bio lactose",
+          "price": "3.3000",
+          "quantity": "25.00",
+          "quantity_unit": "MT",
+          "loading_date": "1970-01-01",
+          "etd": null,
+          "ship_on_board_date": null,
+          "eta": null,
+          "batch_no": null,
+          "production_date": null,
+          "df_invoice_no": null,
+          "df_ai_price": null,
+          "freight_forwarder": null,
+          "freight_forwarder_method": null,
+          "lc_number": null,
+          "port_of_loading": null,
+          "port_of_discharge": null,
+          "status": "pending",
+          "remarks": null,
+          "belonged_month": "2026-05",
+          "belonged_quarter": "2026-Q2",
+          "parity": null,
+          "packing": null,
+          "payment_terms": null,
+          "origin": null,
+          "shelf_life": null,
+          "invoice_no": null,
+          "lc_issue_date": null,
+          "lc_bank_name": null,
+          "lc_bank_bic": null,
+          "lc_bank_address": null,
+          "buyer_name": null,
+          "buyer_address": null,
+          "is_organic": false,
+          "tc_contract_no": null,
+          "tc_invoice_no": null,
+          "tc_seller": null,
+          "tc_buyer": null,
+          "created_at": "2026-05-14 03:16:27.101506+00"
+        }
+      ]
+    },
+    "order_visibility": {
+      "columns": [
+        "container_number",
+        "role"
+      ],
+      "rowCount": 33,
+      "sha256": "296b916ec350ac1d35738df70f82cdb631b41d2087876f0be8963409b281b589",
+      "rows": [
+        {
+          "container_number": "C263-11",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-11",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-11",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-12",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-12",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-12",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-13",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-13",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-13",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-14",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-14",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-14",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-15",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-15",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-15",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-16",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-16",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-16",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-17",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-17",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-17",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-18",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-18",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-18",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-19",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-19",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-19",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-20",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-20",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-20",
+          "role": "supplier"
+        },
+        {
+          "container_number": "C263-21",
+          "role": "customer"
+        },
+        {
+          "container_number": "C263-21",
+          "role": "staff"
+        },
+        {
+          "container_number": "C263-21",
+          "role": "supplier"
+        }
+      ]
+    },
+    "order_files": {
+      "columns": [
+        "file_id",
+        "container_number",
+        "filename",
+        "stored_name",
+        "file_size",
+        "mime_type",
+        "uploaded_by",
+        "uploaded_at",
+        "visible_to_customer",
+        "visible_to_supplier",
+        "visible_to_accountant"
+      ],
+      "rowCount": 10,
+      "sha256": "ed53985ad995b3f6ca15e46a3015ba2241575c2fd16cb24497c810b79ce0de52",
+      "rows": [
+        {
+          "file_id": "98a52da0-06c3-4dfa-8e2a-62a8036cea7e",
+          "container_number": "C263-11",
+          "filename": "C263-11-571LC2600112.pdf",
+          "stored_name": "9832c86e-beea-4fc8-a499-e2dd4926ac21.pdf",
+          "file_size": "73666",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:18:35.308918+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "7cb8ec3a-0b2b-4fbe-a174-01f72aa9ad8b",
+          "container_number": "C263-11",
+          "filename": "C263-11-invoice AI260304-WPCi80-AC260301.pdf",
+          "stored_name": "0efe31be-2254-4f44-9840-82193553ff0c.pdf",
+          "file_size": "250437",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:18:37.154806+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "335333e0-1621-4298-8bfd-2addeef2bee3",
+          "container_number": "C263-11",
+          "filename": "C263-11-IPPC.pdf",
+          "stored_name": "77b32cef-7a14-459c-9865-28b9dc17d99d.pdf",
+          "file_size": "213880",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:18:38.774679+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "9a974bfd-cb07-4ef2-8e78-0b3df8657500",
+          "container_number": "C263-11",
+          "filename": "C263-11-WPCi80-AC260301.pdf",
+          "stored_name": "ddb1056b-3311-457f-be0c-ee2b5c663eb7.pdf",
+          "file_size": "241952",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:18:41.437315+00",
+          "visible_to_customer": true,
+          "visible_to_supplier": false,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "1ac90691-510d-4a72-829b-f5c9b1ddcdf0",
+          "container_number": "C263-11",
+          "filename": "Original  LC BW011AE2600018.pdf",
+          "stored_name": "b1f92f35-5062-4454-803d-c48237610cdf.pdf",
+          "file_size": "422814",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:18:57.559846+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "9a19f100-74c4-4b71-bdc3-083b23a0bbf3",
+          "container_number": "C263-13",
+          "filename": "C263-13-bio lactose-AC260303.pdf",
+          "stored_name": "bf61574f-68d5-4e67-8b98-25ca06e78367.pdf",
+          "file_size": "249585",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:22:13.330891+00",
+          "visible_to_customer": true,
+          "visible_to_supplier": false,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "894b7b75-6f29-485b-bfe4-9dae017863c5",
+          "container_number": "C263-13",
+          "filename": "C263-13-invoice AI260303-bio lactose-AC260303.pdf",
+          "stored_name": "52933578-f2e8-4748-9eb9-dc6ad53b7e2f.pdf",
+          "file_size": "264351",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:22:14.664341+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "5a958ffe-b4e2-40a5-b1b6-0b14ca788781",
+          "container_number": "C263-13",
+          "filename": "C263-13-IPPC.pdf",
+          "stored_name": "f081f35f-9252-421d-99fa-aafa7cb3b57b.pdf",
+          "file_size": "219812",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:22:20.076875+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "088d1255-d28a-47a0-9e9d-1fafb9197613",
+          "container_number": "C263-13",
+          "filename": "LC1900326000286.pdf",
+          "stored_name": "ff7e3fd0-141e-40b9-86d2-b2d65925249e.pdf",
+          "file_size": "79867",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:22:21.57698+00",
+          "visible_to_customer": false,
+          "visible_to_supplier": true,
+          "visible_to_accountant": false
+        },
+        {
+          "file_id": "c742cb57-f306-442f-96f8-adf6a05f3ec5",
+          "container_number": "C263-13",
+          "filename": "Scan C263-13 LAC1302260142.pdf",
+          "stored_name": "d8d4a916-92a3-47dc-ad16-1eabf60bd79c.pdf",
+          "file_size": "1878159",
+          "mime_type": "application/pdf",
+          "uploaded_by": "243643f4-c88a-476d-a667-a0b502924b33",
+          "uploaded_at": "2026-05-14 09:22:29.395648+00",
+          "visible_to_customer": true,
+          "visible_to_supplier": false,
+          "visible_to_accountant": false
+        }
+      ]
+    },
+    "role_field_visibility": {
+      "columns": [
+        "role",
+        "field_key",
+        "editable"
+      ],
+      "rowCount": 92,
+      "sha256": "4bd146ca48c3f03759415697e4920c93d2cdf21c8aa79820f1ea87e07241f1fd",
+      "rows": [
+        {
+          "role": "accountant",
+          "field_key": "brand",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "buyer_address",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "buyer_name",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "container_number",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "contract_id",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "invoice_no",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "lc_bank_address",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "lc_bank_bic",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "lc_bank_name",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "lc_issue_date",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "lc_number",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "parity",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "payment_terms",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "price",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "product",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "quantity",
+          "editable": false
+        },
+        {
+          "role": "accountant",
+          "field_key": "status",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "batch_no",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "brand",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "container_number",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "contract_id",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "eta",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "etd",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "loading_date",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "product",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "quantity",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "remarks",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "ship_on_board_date",
+          "editable": false
+        },
+        {
+          "role": "customer",
+          "field_key": "status",
+          "editable": false
+        },
+        {
+          "role": "staff",
+          "field_key": "batch_no",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "belonged_month",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "belonged_quarter",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "bl",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "brand",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "buyer_address",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "buyer_name",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "container_number",
+          "editable": false
+        },
+        {
+          "role": "staff",
+          "field_key": "contract_id",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "customer_id",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "df_ai_price",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "df_invoice_no",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "eta",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "etd",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "freight_forwarder",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "freight_forwarder_method",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "invoice_no",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "is_organic",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "lc_bank_address",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "lc_bank_bic",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "lc_bank_name",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "lc_issue_date",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "lc_number",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "loading_date",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "origin",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "packing",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "parity",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "payment_terms",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "port_of_discharge",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "port_of_loading",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "price",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "product",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "production_date",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "quantity",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "quantity_unit",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "remarks",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "shelf_life",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "ship_on_board_date",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "status",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "supplier_id",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "tc_buyer",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "tc_contract_no",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "tc_invoice_no",
+          "editable": true
+        },
+        {
+          "role": "staff",
+          "field_key": "tc_seller",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "batch_no",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "brand",
+          "editable": false
+        },
+        {
+          "role": "supplier",
+          "field_key": "container_number",
+          "editable": false
+        },
+        {
+          "role": "supplier",
+          "field_key": "contract_id",
+          "editable": false
+        },
+        {
+          "role": "supplier",
+          "field_key": "df_ai_price",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "df_invoice_no",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "eta",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "etd",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "freight_forwarder",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "lc_number",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "loading_date",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "port_of_discharge",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "port_of_loading",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "product",
+          "editable": false
+        },
+        {
+          "role": "supplier",
+          "field_key": "production_date",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "quantity",
+          "editable": false
+        },
+        {
+          "role": "supplier",
+          "field_key": "remarks",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "ship_on_board_date",
+          "editable": true
+        },
+        {
+          "role": "supplier",
+          "field_key": "status",
+          "editable": true
+        }
+      ]
+    },
+    "hard_denied_info": {
+      "columns": [
+        "field_key"
+      ],
+      "rowCount": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "rows": []
+    },
+    "order_options": {
+      "columns": [
+        "option_id",
+        "option_type",
+        "value",
+        "sort_order",
+        "created_at"
+      ],
+      "rowCount": 6,
+      "sha256": "11844d7971163870fb6db2f1b018a69ee6fc23849840377d6adcbbe8f68f831b",
+      "rows": [
+        {
+          "option_id": "0b4a7841-6053-4289-ae6f-93fe679361a8",
+          "option_type": "parity",
+          "value": "CIF Tianjin, Xingang,China (Incoterms 2020)",
+          "sort_order": 1,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        },
+        {
+          "option_id": "a730e2ff-4ccd-41f9-afb2-9ed73983c454",
+          "option_type": "parity",
+          "value": "DAP Beijing, China (Incoterms 2020)",
+          "sort_order": 2,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        },
+        {
+          "option_id": "44a77f72-64f2-423c-9677-2178095bc88e",
+          "option_type": "parity",
+          "value": "DAP Shanghai, China (Incoterms 2020)",
+          "sort_order": 3,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        },
+        {
+          "option_id": "dee68d4b-6f47-4088-9391-6e6fcb855c13",
+          "option_type": "payment_terms",
+          "value": "L/C 90 days after B/L date",
+          "sort_order": 1,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        },
+        {
+          "option_id": "16cf101b-a4eb-4824-abe3-e48d8fab6072",
+          "option_type": "payment_terms",
+          "value": "T/T 100% payment 30 days after shipment",
+          "sort_order": 2,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        },
+        {
+          "option_id": "634aef37-3db1-48dc-be56-0120481b5447",
+          "option_type": "payment_terms",
+          "value": "T/T 100% payment 60 days after shipment",
+          "sort_order": 3,
+          "created_at": "2026-05-13 12:21:29.031115+00"
+        }
+      ]
+    },
+    "accountant_files": {
+      "columns": [
+        "file_id",
+        "year",
+        "month",
+        "filename",
+        "stored_name",
+        "file_size",
+        "mime_type",
+        "uploaded_by",
+        "uploaded_at"
+      ],
+      "rowCount": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "rows": []
+    },
+    "order_month": {
+      "columns": [
+        "container_number",
+        "year",
+        "month",
+        "updated_by",
+        "updated_at"
+      ],
+      "rowCount": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "rows": []
+    },
+    "order_quarter": {
+      "columns": [
+        "container_number",
+        "year",
+        "quarter",
+        "updated_by",
+        "updated_at"
+      ],
+      "rowCount": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "rows": []
+    }
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "bundleSha256": "8faaef0d74912965bbc2685f343b274904e5a5672a14fd4ba494c2ec70f112aa"
+  }
+}
