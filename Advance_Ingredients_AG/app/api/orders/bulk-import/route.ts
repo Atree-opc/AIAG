@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { PoolClient } from 'pg'
 import pool from '@/lib/db'
 import { withAuth } from '@/lib/middleware-helpers'
 import { JWTPayload } from '@/types'
@@ -14,6 +15,10 @@ const INSERT_COLUMNS = [
 ]
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+type ImportOrderRow = Record<string, unknown> & {
+  container_number: string | null
+}
 
 function quarterFromMonth(month: number) {
   return Math.ceil(month / 3)
@@ -77,7 +82,7 @@ function parseImportDate(value: unknown): string | null {
 }
 
 async function resolveUserRef(
-  client: Awaited<ReturnType<typeof pool.connect>>,
+  client: PoolClient,
   rawValue: unknown,
   role: 'customer' | 'supplier'
 ): Promise<{ userId: string | null; error?: string }> {
@@ -102,10 +107,14 @@ async function resolveUserRef(
   return { userId: rows[0].user_id as string }
 }
 
-function normalizeOrderRow(row: Record<string, unknown>) {
+function normalizeOrderRow(row: Record<string, unknown>): ImportOrderRow {
+  const rawContainerNumber = row.container_number ?? row['container_number*']
   return {
     ...row,
-    container_number: row.container_number ?? row['container_number*'] ?? null,
+    container_number:
+      rawContainerNumber === null || rawContainerNumber === undefined || String(rawContainerNumber).trim() === ''
+        ? null
+        : String(rawContainerNumber).trim(),
   }
 }
 
@@ -236,7 +245,7 @@ export const POST = withAuth(async (req: Request, _user: JWTPayload) => {
           RETURNING *
         `
 
-        const { rows: inserted } = await client.query(insertQuery, values)
+        await client.query(insertQuery, values)
 
         // Add visibility
         await client.query(`
