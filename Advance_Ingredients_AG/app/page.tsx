@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function HomePage() {
   return (
@@ -9,9 +10,16 @@ export default function HomePage() {
 
       {/* Hero Section - Establish Authority and Trust */}
       <section
-        className="relative min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/heropage.png')" }}
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
+        <Image
+          src="/optimized/home-hero.webp"
+          alt="Advance Ingredients hero background"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
         {/* 深色遮罩，提高文字可读性 */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40"></div>
 
@@ -68,7 +76,7 @@ export default function HomePage() {
       </section>
 
       {/* Who We Are - 简洁介绍 */}
-      <section className="py-24 px-6 bg-bg-primary">
+      <section className="py-24 px-6 bg-bg-primary [content-visibility:auto] [contain-intrinsic-size:800px]">
         <div className="container mx-auto max-w-4xl text-center">
           <span className="inline-block text-primary text-sm font-bold tracking-widest uppercase mb-4">
             Who We Are
@@ -83,7 +91,7 @@ export default function HomePage() {
       </section>
 
       {/* 第二阶段：Solutions & Capabilities - 证明"我们懂行"与"我们有能力" */}
-      <section className="py-24 px-6 bg-gradient-to-b from-bg-secondary to-bg-primary">
+      <section className="py-24 px-6 bg-gradient-to-b from-bg-secondary to-bg-primary [content-visibility:auto] [contain-intrinsic-size:1000px]">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <span className="inline-block text-primary text-sm font-bold tracking-widest uppercase mb-4">
@@ -163,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* 第三阶段：Brands & Products - 品牌矩阵 */}
-      <section className="py-24 px-6 bg-bg-primary">
+      <section className="py-24 px-6 bg-bg-primary [content-visibility:auto] [contain-intrinsic-size:900px]">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <span className="inline-block text-primary text-sm font-bold tracking-widest uppercase mb-4">
@@ -184,7 +192,14 @@ export default function HomePage() {
               className="group relative bg-gradient-to-br from-green-50 to-white rounded-2xl p-10 border-2 border-green-100 hover:border-green-400 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
             >
               <div className="absolute top-6 right-6 w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-md">
-                <img src="/FOONEXUS-logo.png" alt="FOONEXUS" className="w-full h-full object-contain" />
+                <Image
+                  src="/optimized/foonexus-logo.webp"
+                  alt="FOONEXUS"
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               <div className="mb-6">
@@ -228,7 +243,14 @@ export default function HomePage() {
               className="group relative bg-gradient-to-br from-blue-50 to-white rounded-2xl p-10 border-2 border-blue-100 hover:border-blue-400 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
             >
               <div className="absolute top-6 right-6 w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-md">
-                <img src="/LVEO-logo.jpg" alt="LVEO" className="w-full h-full object-contain" />
+                <Image
+                  src="/optimized/lveo-logo.webp"
+                  alt="LVEO"
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               <div className="mb-6">
@@ -272,7 +294,14 @@ export default function HomePage() {
               className="group relative bg-gradient-to-br from-red-50 to-bg-primary rounded-2xl p-10 border-2 border-red-100 hover:border-primary hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
             >
               <div className="absolute top-6 right-6 w-16 h-16 bg-white rounded-lg flex items-center justify-center p-2 group-hover:scale-110 transition-transform shadow-md">
-                <img src="/NEULINK-logo.png" alt="NEULINK" className="w-full h-full object-contain" />
+                <Image
+                  src="/optimized/neulink-logo.webp"
+                  alt="NEULINK"
+                  width={64}
+                  height={64}
+                  sizes="64px"
+                  className="w-full h-full object-contain"
+                />
               </div>
 
               <div className="mb-6">
@@ -314,7 +343,7 @@ export default function HomePage() {
       </section>
 
       {/* 第四阶段：Values & Integrity - 消除顾虑，建立信任壁垒 */}
-      <section className="py-24 px-6 bg-gradient-to-b from-bg-secondary to-bg-primary">
+      <section className="py-24 px-6 bg-gradient-to-b from-bg-secondary to-bg-primary [content-visibility:auto] [contain-intrinsic-size:900px]">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <span className="inline-block text-primary text-sm font-bold tracking-widest uppercase mb-4">
@@ -400,7 +429,7 @@ export default function HomePage() {
       </section>
 
       {/* 第五阶段：Contact - 促成行动 */}
-      <section className="py-24 px-6 bg-bg-primary">
+      <section className="py-24 px-6 bg-bg-primary [content-visibility:auto] [contain-intrinsic-size:1000px]">
         <div className="container mx-auto max-w-4xl">
           <div className="text-center mb-16">
             <span className="inline-block text-primary text-sm font-bold tracking-widest uppercase mb-4">
