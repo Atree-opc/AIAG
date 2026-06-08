@@ -69,6 +69,13 @@ CREATE TABLE IF NOT EXISTS order_visibility (
   PRIMARY KEY (container_number, role)
 );
 
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_supplier_id ON orders(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_orders_belonged_month ON orders(belonged_month);
+CREATE INDEX IF NOT EXISTS idx_orders_belonged_quarter ON orders(belonged_quarter);
+CREATE INDEX IF NOT EXISTS idx_order_visibility_role_container ON order_visibility(role, container_number);
+
 -- File storage
 CREATE TABLE IF NOT EXISTS order_files (
   file_id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -79,10 +86,43 @@ CREATE TABLE IF NOT EXISTS order_files (
   mime_type            VARCHAR(100),
   uploaded_by          UUID REFERENCES users(user_id),
   uploaded_at            TIMESTAMPTZ DEFAULT NOW(),
+  category_code          VARCHAR(50) NOT NULL DEFAULT 'uncategorized',
   visible_to_customer    BOOLEAN NOT NULL DEFAULT false,
   visible_to_supplier    BOOLEAN NOT NULL DEFAULT false,
   visible_to_accountant  BOOLEAN NOT NULL DEFAULT false
 );
+
+CREATE TABLE IF NOT EXISTS order_file_categories (
+  category_code   VARCHAR(50) PRIMARY KEY,
+  label_en        VARCHAR(100) NOT NULL,
+  label_zh        VARCHAR(100) NOT NULL,
+  sort_order      INT NOT NULL DEFAULT 0,
+  required        BOOLEAN NOT NULL DEFAULT true,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS order_file_checklist (
+  container_number VARCHAR(50) NOT NULL REFERENCES orders(container_number) ON DELETE CASCADE,
+  category_code    VARCHAR(50) NOT NULL REFERENCES order_file_categories(category_code),
+  status           VARCHAR(20) NOT NULL DEFAULT 'missing' CHECK (status IN ('missing','uploaded','reviewing','approved','rejected')),
+  note             TEXT,
+  updated_by       UUID REFERENCES users(user_id),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (container_number, category_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_files_container_category ON order_files(container_number, category_code);
+CREATE INDEX IF NOT EXISTS idx_order_file_checklist_container_category ON order_file_checklist(container_number, category_code);
+
+INSERT INTO order_file_categories (category_code, label_en, label_zh, sort_order, required) VALUES
+  ('contract', 'Contract', '合同', 1, true),
+  ('invoice', 'Invoice', '发票', 2, true),
+  ('bill_of_exchange', 'Bill of Exchange', '汇票', 3, true),
+  ('ippc', 'IPPC', 'IPPC', 4, true),
+  ('scanned_copy', 'Scanned Copy', '扫描件', 5, true),
+  ('lc', 'L/C', '信用证', 6, true),
+  ('uncategorized', 'Uncategorized', '未分类', 99, false)
+ON CONFLICT (category_code) DO NOTHING;
 
 -- Role field visibility: which order fields each role can see (whitelist)
 CREATE TABLE IF NOT EXISTS role_field_visibility (

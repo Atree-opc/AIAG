@@ -3,6 +3,12 @@ import pool from '@/lib/db'
 import { withAuth } from '@/lib/middleware-helpers'
 import { JWTPayload } from '@/types'
 import { getFilePath, deleteFile } from '@/lib/file-storage'
+import {
+  ensureChecklistForContainer,
+  isValidFileChecklistStatus,
+  normalizeFileCategoryCode,
+  syncChecklistStatuses,
+} from '@/lib/file-checklist'
 import fs from 'fs'
 
 async function canAccessOrder(containerNumber: string, user: JWTPayload): Promise<boolean> {
@@ -45,6 +51,8 @@ export const GET = withAuth(async (_req, user: JWTPayload, context) => {
   }
 
   try {
+    await ensureChecklistForContainer(container)
+
     // Build visibility filter for non-admin/staff
     let visibilityFilter = ''
     if (user.role === 'supplier') visibilityFilter = 'AND f.visible_to_supplier = true'
@@ -95,6 +103,8 @@ export const DELETE = withAuth(async (_req, user: JWTPayload, context) => {
   }
 
   try {
+    await ensureChecklistForContainer(container)
+
     const { rows } = await pool.query(
       `SELECT f.*, om.year, om.month
        FROM order_files f
@@ -108,6 +118,7 @@ export const DELETE = withAuth(async (_req, user: JWTPayload, context) => {
     deleteFile(file.year ?? null, file.month ?? null, container, file.stored_name)
 
     await pool.query(`DELETE FROM order_files WHERE file_id=$1`, [fileId])
+    await syncChecklistStatuses(container)
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error(err)
@@ -125,6 +136,8 @@ export const PATCH = withAuth(async (req, user: JWTPayload, context) => {
   }
 
   try {
+    await ensureChecklistForContainer(container)
+
     const body = await req.json()
     const updates: string[] = []
     const values: unknown[] = []
@@ -147,6 +160,10 @@ export const PATCH = withAuth(async (req, user: JWTPayload, context) => {
       updates.push(`visible_to_accountant=$${values.length + 1}`)
       values.push(Boolean(body.visible_to_accountant))
     }
+    if (body.category_code !== undefined) {
+      updates.push(`category_code=$${values.length + 1}`)
+      values.push(normalizeFileCategoryCode(body.category_code))
+    }
 
     if (updates.length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
@@ -160,6 +177,70 @@ export const PATCH = withAuth(async (req, user: JWTPayload, context) => {
       values
     )
     if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    await syncChecklistStatuses(container)
+    return NextResponse.json(rows[0])
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}, ['admin', 'staff'])
+
+// POST /api/files/[container]/[fileId] — update checklist item status or note (admin, staff only)
+export const POST = withAuth(async (req, user: JWTPayload, context) => {
+  const container = context?.params?.container as string
+  const fileId = context?.params?.fileId as string
+
+  if (fileId !== '__checklist__') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  if (!(await canAccessOrder(container, user))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  try {
+    await ensureChecklistForContainer(container)
+
+    const body = await req.json()
+    const categoryCode = normalizeFileCategoryCode(body.category_code)
+    const updates: string[] = []
+    const values: unknown[] = []
+
+    if (body.status !== undefined) {
+      if (!isValidFileChecklistStatus(body.status)) {
+        return NextResponse.json({ error: 'Invalid checklist status' }, { status: 400 })
+      }
+      updates.push(`status=$${values.length + 1}`)
+      values.push(body.status)
+    }
+
+    if (body.note !== undefined) {
+      updates.push(`note=$${values.length + 1}`)
+      values.push(body.note ? String(body.note).trim() : null)
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    }
+
+    updates.push(`updated_by=$${values.length + 1}`)
+    values.push(user.userId)
+    updates.push(`updated_at=NOW()`)
+
+    values.push(container, categoryCode)
+
+    const { rows } = await pool.query(
+      `UPDATE order_file_checklist
+       SET ${updates.join(', ')}
+       WHERE container_number=$${values.length - 1} AND category_code=$${values.length}
+       RETURNING *`,
+      values
+    )
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Checklist item not found' }, { status: 404 })
+    }
+
     return NextResponse.json(rows[0])
   } catch (err) {
     console.error(err)

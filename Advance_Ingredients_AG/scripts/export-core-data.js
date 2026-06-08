@@ -113,10 +113,40 @@ const TABLES = [
     `,
   },
   {
+    name: 'order_file_categories',
+    columns: ['category_code', 'label_en', 'label_zh', 'sort_order', 'required', 'created_at'],
+    query: `
+      SELECT
+        category_code,
+        label_en,
+        label_zh,
+        sort_order,
+        required,
+        created_at::text
+      FROM order_file_categories
+      ORDER BY sort_order, category_code
+    `,
+  },
+  {
+    name: 'order_file_checklist',
+    columns: ['container_number', 'category_code', 'status', 'note', 'updated_by', 'updated_at'],
+    query: `
+      SELECT
+        container_number,
+        category_code,
+        status,
+        note,
+        updated_by::text,
+        updated_at::text
+      FROM order_file_checklist
+      ORDER BY container_number, category_code
+    `,
+  },
+  {
     name: 'order_files',
     columns: [
       'file_id', 'container_number', 'filename', 'stored_name', 'file_size', 'mime_type',
-      'uploaded_by', 'uploaded_at', 'visible_to_customer', 'visible_to_supplier', 'visible_to_accountant',
+      'uploaded_by', 'uploaded_at', 'category_code', 'visible_to_customer', 'visible_to_supplier', 'visible_to_accountant',
     ],
     query: `
       SELECT
@@ -128,6 +158,7 @@ const TABLES = [
         mime_type,
         uploaded_by::text,
         uploaded_at::text,
+        category_code,
         visible_to_customer,
         visible_to_supplier,
         visible_to_accountant

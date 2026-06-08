@@ -2,9 +2,18 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { Order, OrderFile, OrderOption, User } from '@/types'
+import { FileChecklistStatus, Order, OrderFile, OrderFileChecklistItem, OrderOption, User } from '@/types'
+import { FILE_CATEGORY_TEMPLATES } from '@/lib/file-checklist-config'
 
 type FileRow = OrderFile & { uploaded_by_name?: string }
+
+const CHECKLIST_STATUS_LABELS: Record<FileChecklistStatus, string> = {
+  missing: 'Missing / 缺失',
+  uploaded: 'Uploaded / 已上传',
+  reviewing: 'Reviewing / 待审核',
+  approved: 'Approved / 已确认',
+  rejected: 'Rejected / 需重传',
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending:    '待处理 Pending',
@@ -93,10 +102,13 @@ function OrderDetailInner() {
   const [orderOptions, setOrderOptions] = useState<OrderOption[]>([])
 
   const [files, setFiles] = useState<FileRow[]>([])
+  const [checklist, setChecklist] = useState<OrderFileChecklistItem[]>([])
   const [filesLoading, setFilesLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [uploadMessage, setUploadMessage] = useState('')
+  const [uploadCategory, setUploadCategory] = useState('uncategorized')
   const [dragging, setDragging] = useState(false)
   const [renamingFile, setRenamingFile] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -126,7 +138,13 @@ function OrderDetailInner() {
     setFilesLoading(true)
     const res = await fetch(`/api/files/${container}`, { headers: authHeaders() })
     const data = await res.json()
-    setFiles(Array.isArray(data) ? data : [])
+    if (Array.isArray(data)) {
+      setFiles(data)
+      setChecklist([])
+    } else {
+      setFiles(Array.isArray(data.files) ? data.files : [])
+      setChecklist(Array.isArray(data.checklist) ? data.checklist : [])
+    }
     setFilesLoading(false)
   }
 
@@ -178,18 +196,45 @@ function OrderDetailInner() {
     setSaving(false)
   }
 
-  async function handleUploadFile(file: File) {
+  async function handleUploadFiles(fileList: FileList | File[]) {
+    const filesToUpload = Array.from(fileList)
+    if (filesToUpload.length === 0) return
+
     setUploadError('')
+    setUploadMessage('')
     setUploading(true)
     const form = new FormData()
-    form.append('file', file)
+    filesToUpload.forEach(file => form.append('files', file))
+    form.append('category_code', uploadCategory)
     const res = await fetch(`/api/files/${container}`, {
       method: 'POST', body: form,
     })
     const data = await res.json()
-    if (!res.ok) setUploadError(data.error ?? 'Upload failed')
-    else await fetchFiles()
+    if (!res.ok) {
+      setUploadError(data.error ?? 'Upload failed')
+    } else {
+      const uploadedCount = Array.isArray(data.uploaded) ? data.uploaded.length : 0
+      const failedUploads = Array.isArray(data.failed) ? data.failed : []
+      if (uploadedCount > 0) {
+        setUploadMessage(
+          failedUploads.length > 0
+            ? `Uploaded ${uploadedCount} file(s), ${failedUploads.length} failed. / 已上传 ${uploadedCount} 个文件，失败 ${failedUploads.length} 个。`
+            : `Uploaded ${uploadedCount} file(s). / 已上传 ${uploadedCount} 个文件。`
+        )
+      }
+      if (failedUploads.length > 0) {
+        setUploadError(failedUploads.map((item: { filename?: string; error?: string }) => `${item.filename ?? 'Unknown file'}: ${item.error ?? 'Upload failed'}`).join(' '))
+      }
+      await fetchFiles()
+    }
     setUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function openCategoryUpload(categoryCode: string) {
+    setUploadCategory(categoryCode)
+    setShowUpload(true)
+    fileInputRef.current?.click()
   }
 
   async function handleDelete(fileId: string, filename: string) {
@@ -197,7 +242,7 @@ function OrderDetailInner() {
     const res = await fetch(`/api/files/${container}/${fileId}`, {
       method: 'DELETE', headers: authHeaders(),
     })
-    if (res.ok) setFiles(f => f.filter(x => x.file_id !== fileId))
+    if (res.ok) await fetchFiles()
   }
 
   async function handleDownloadFile(fileId: string, filename: string) {
@@ -237,6 +282,25 @@ function OrderDetailInner() {
     if (res.ok) {
       const updated = await res.json()
       setFiles(fs => fs.map(f => f.file_id === fileId ? { ...f, ...updated } : f))
+    }
+  }
+
+  async function handleCategoryChange(fileId: string, categoryCode: string) {
+    const res = await fetch(`/api/files/${container}/${fileId}`, {
+      method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ category_code: categoryCode }),
+    })
+    if (res.ok) {
+      await fetchFiles()
+    }
+  }
+
+  async function handleChecklistUpdate(categoryCode: string, payload: { status?: FileChecklistStatus; note?: string }) {
+    const res = await fetch(`/api/files/${container}/__checklist__`, {
+      method: 'POST', headers: authHeaders(), body: JSON.stringify({ category_code: categoryCode, ...payload }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setChecklist(items => items.map(item => item.category_code === categoryCode ? { ...item, ...updated } : item))
     }
   }
 
@@ -442,6 +506,66 @@ function OrderDetailInner() {
           </div>
         </div>
 
+        {checklist.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
+            {checklist.map(item => (
+              <div
+                key={item.category_code}
+                className={`border rounded-xl p-3 ${
+                  item.status === 'missing'
+                    ? 'border-red-200 bg-red-50/70'
+                    : item.status === 'reviewing'
+                      ? 'border-amber-200 bg-amber-50/70'
+                      : item.status === 'rejected'
+                        ? 'border-orange-200 bg-orange-50/70'
+                        : item.status === 'approved'
+                          ? 'border-green-200 bg-green-50/70'
+                          : 'border-gray-100 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">{item.label_en} / {item.label_zh}</p>
+                    <p className="text-xs text-text-secondary mt-1">
+                      {item.file_count} file(s){item.required ? ' · Required / 必需' : ' · Optional / 可选'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <select
+                      value={item.status}
+                      onChange={e => handleChecklistUpdate(item.category_code, { status: e.target.value as FileChecklistStatus })}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
+                    >
+                      {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => openCategoryUpload(item.category_code)}
+                      disabled={uploading}
+                      className="text-xs px-2 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-50"
+                    >
+                      Upload / 上传
+                    </button>
+                  </div>
+                </div>
+                <input
+                  defaultValue={item.note ?? ''}
+                  onBlur={e => {
+                    const nextNote = e.target.value.trim()
+                    if (nextNote !== (item.note ?? '')) {
+                      handleChecklistUpdate(item.category_code, { note: nextNote })
+                    }
+                  }}
+                  placeholder="Checklist note / 清单备注"
+                  className="mt-3 w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Upload drop zone */}
         {showUpload && (
           <div
@@ -449,21 +573,36 @@ function OrderDetailInner() {
             onDragLeave={() => setDragging(false)}
             onDrop={e => {
               e.preventDefault(); setDragging(false)
-              const file = e.dataTransfer.files[0]
-              if (file) handleUploadFile(file)
+              if (e.dataTransfer.files.length > 0) handleUploadFiles(e.dataTransfer.files)
             }}
             className={`mb-4 border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragging ? 'border-primary bg-primary/5' : 'border-gray-200 bg-gray-50'}`}
           >
             <p className="text-sm text-text-secondary mb-3">
-              {uploading ? 'Uploading... / 上传中...' : 'Drag & drop a file here / 拖拽文件到此处'}
+              {uploading ? 'Uploading... / 上传中...' : 'Drag & drop files here / 拖拽文件到此处'}
             </p>
+            {!uploading && (
+              <div className="mb-3 flex justify-center">
+                <select
+                  value={uploadCategory}
+                  onChange={e => setUploadCategory(e.target.value)}
+                  className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                >
+                  {FILE_CATEGORY_TEMPLATES.map(category => (
+                    <option key={category.code} value={category.code}>
+                      {category.label_en} / {category.label_zh}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {!uploading && (
               <label className="text-sm text-primary hover:underline cursor-pointer">
                 or browse / 或点击选择
-                <input ref={fileInputRef} type="file" className="hidden"
-                  onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadFile(f) }} />
+                <input ref={fileInputRef} type="file" multiple className="hidden"
+                  onChange={e => { if (e.target.files?.length) handleUploadFiles(e.target.files) }} />
               </label>
             )}
+            {uploadMessage && <p className="text-xs text-green-700 mt-2">{uploadMessage}</p>}
             {uploadError && <p className="text-xs text-red-600 mt-2">{uploadError}</p>}
           </div>
         )}
@@ -480,6 +619,7 @@ function OrderDetailInner() {
                 <tr className="bg-gray-50 border-b border-gray-100 text-text-secondary">
                   <th className="text-left px-3 py-2 font-medium">Filename / 文件名</th>
                   <th className="text-left px-3 py-2 font-medium">Size / 大小</th>
+                  <th className="text-left px-3 py-2 font-medium">Category / 分类</th>
                   <th className="text-left px-3 py-2 font-medium">Uploaded by / 上传者</th>
                   <th className="text-left px-3 py-2 font-medium">Date / 日期</th>
                   <th className="text-center px-3 py-2 font-medium">Supplier</th>
@@ -504,6 +644,19 @@ function OrderDetailInner() {
                       )}
                     </td>
                     <td className="px-3 py-2 text-text-secondary">{formatSize(f.file_size)}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={f.category_code ?? 'uncategorized'}
+                        onChange={e => handleCategoryChange(f.file_id, e.target.value)}
+                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                      >
+                        {FILE_CATEGORY_TEMPLATES.map(category => (
+                          <option key={category.code} value={category.code}>
+                            {category.label_en} / {category.label_zh}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="px-3 py-2 text-text-secondary">{f.uploaded_by_name ?? '—'}</td>
                     <td className="px-3 py-2 text-text-secondary">{f.uploaded_at?.slice(0, 10)}</td>
                     <td className="px-3 py-2 text-center">
@@ -610,5 +763,3 @@ function FieldInput({ fieldKey, value, customers, orderOptions, onCommit, onCanc
       className="w-full border border-primary rounded px-2 py-1 text-sm focus:outline-none" />
   )
 }
-
-

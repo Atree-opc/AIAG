@@ -6,23 +6,44 @@ import {
   ensureOrderDir, generateStoredName, getFilePath,
   ALLOWED_MIME_TYPES, MAX_FILE_SIZE,
 } from '@/lib/file-storage'
+import {
+  ensureChecklistForContainer,
+  normalizeFileCategoryCode,
+} from '@/lib/file-checklist'
 import fs from 'fs'
 
-// Per-user upload rate limit: max 20 uploads per hour
+// Per-user upload rate limit: max 20 uploaded files per hour
 const uploadAttempts = new Map<string, { count: number; resetAt: number }>()
 const MAX_UPLOADS_PER_HOUR = 20
 const UPLOAD_WINDOW_MS = 60 * 60 * 1000
 
-function checkUploadLimit(userId: string): boolean {
+function reserveUploadSlots(userId: string, fileCount: number): boolean {
+  if (fileCount <= 0 || fileCount > MAX_UPLOADS_PER_HOUR) return false
+
   const now = Date.now()
   const entry = uploadAttempts.get(userId)
   if (!entry || now > entry.resetAt) {
-    uploadAttempts.set(userId, { count: 1, resetAt: now + UPLOAD_WINDOW_MS })
-    return true // allowed
+    uploadAttempts.set(userId, { count: fileCount, resetAt: now + UPLOAD_WINDOW_MS })
+    return true
   }
-  if (entry.count >= MAX_UPLOADS_PER_HOUR) return false // blocked
-  entry.count += 1
+  if (entry.count + fileCount > MAX_UPLOADS_PER_HOUR) return false
+  entry.count += fileCount
   return true
+}
+
+function extractFiles(formData: FormData): File[] {
+  const values = [...formData.getAll('files'), ...formData.getAll('file')]
+  return values.filter((value): value is File => value instanceof File && value.size > 0)
+}
+
+function validateFile(file: File): string | null {
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return 'File type not allowed'
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return 'File exceeds 50MB limit'
+  }
+  return null
 }
 
 async function canAccessOrder(containerNumber: string, user: JWTPayload): Promise<boolean> {
@@ -65,6 +86,8 @@ export const GET = withAuth(async (_req, user: JWTPayload, context) => {
   }
 
   try {
+    await ensureChecklistForContainer(container)
+
     let visibilityFilter = ''
     if (user.role === 'supplier') {
       visibilityFilter = 'AND f.visible_to_supplier = true'
@@ -75,35 +98,70 @@ export const GET = withAuth(async (_req, user: JWTPayload, context) => {
     }
     // admin and staff see all files (no filter)
 
-    const { rows } = await pool.query(
-      `SELECT f.*, u.name AS uploaded_by_name
+    const fileQuery = pool.query(
+        `SELECT f.*, u.name AS uploaded_by_name, c.label_en AS category_label_en, c.label_zh AS category_label_zh
        FROM order_files f
        LEFT JOIN users u ON f.uploaded_by = u.user_id
+       LEFT JOIN order_file_categories c ON f.category_code = c.category_code
        WHERE f.container_number = $1 ${visibilityFilter}
-       ORDER BY f.uploaded_at DESC`,
-      [container]
-    )
-    return NextResponse.json(rows)
+       ORDER BY COALESCE(c.sort_order, 999), f.uploaded_at DESC`,
+        [container]
+      )
+
+    const checklistQuery = (user.role === 'admin' || user.role === 'staff')
+      ? pool.query(
+          `SELECT
+           checklist.container_number,
+           checklist.category_code,
+           categories.label_en,
+           categories.label_zh,
+           categories.sort_order,
+           categories.required,
+           checklist.status,
+           checklist.note,
+           checklist.updated_by::text,
+           checklist.updated_at,
+           COUNT(files.file_id)::int AS file_count
+         FROM order_file_checklist checklist
+         JOIN order_file_categories categories ON checklist.category_code = categories.category_code
+         LEFT JOIN order_files files
+           ON files.container_number = checklist.container_number
+          AND files.category_code = checklist.category_code
+         WHERE checklist.container_number = $1
+         GROUP BY
+           checklist.container_number,
+           checklist.category_code,
+           categories.label_en,
+           categories.label_zh,
+           categories.sort_order,
+           categories.required,
+           checklist.status,
+           checklist.note,
+           checklist.updated_by,
+           checklist.updated_at
+         ORDER BY categories.sort_order, categories.label_en`,
+          [container]
+        )
+      : Promise.resolve({ rows: [] as unknown[] })
+
+    const [filesResult, checklistResult] = await Promise.all([fileQuery, checklistQuery])
+    return NextResponse.json({
+      files: filesResult.rows,
+      checklist: checklistResult.rows,
+    })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 })
 
-// POST /api/files/[container] — upload a file
+// POST /api/files/[container] — upload one or more files
 export const POST = withAuth(async (req, user: JWTPayload, context) => {
   const container = context?.params?.container as string
   if (!container) return NextResponse.json({ error: 'Missing container' }, { status: 400 })
 
   if (!(await canAccessOrder(container, user))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  if (!checkUploadLimit(user.userId)) {
-    return NextResponse.json(
-      { error: 'Upload limit reached. Max 20 uploads per hour. / 上传次数超限，每小时最多上传20个文件。' },
-      { status: 429 }
-    )
   }
 
   try {
@@ -122,34 +180,81 @@ export const POST = withAuth(async (req, user: JWTPayload, context) => {
     const month: number | null = periodRows[0].month ?? null
 
     const formData = await req.formData()
-    const file = formData.get('file') as File | null
-    if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      return NextResponse.json({ error: 'File type not allowed' }, { status: 400 })
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'File exceeds 50MB limit' }, { status: 400 })
+    const files = extractFiles(formData)
+    if (files.length === 0) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    const storedName = generateStoredName(file.name)
+    if (!reserveUploadSlots(user.userId, files.length)) {
+      return NextResponse.json(
+        { error: 'Upload limit reached. Max 20 uploaded files per hour. / 上传次数超限，每小时最多上传20个文件。' },
+        { status: 429 }
+      )
+    }
+
+    const invalidFile = files.find(file => validateFile(file))
+    if (invalidFile) {
+      return NextResponse.json(
+        { error: `${invalidFile.name}: ${validateFile(invalidFile)}` },
+        { status: 400 }
+      )
+    }
+
     ensureOrderDir(year, month, container)
-    const filePath = getFilePath(year, month, container, storedName)
-
-    const buffer = Buffer.from(await file.arrayBuffer())
-    fs.writeFileSync(filePath, buffer)
 
     // Supplier uploads are visible to supplier (and admin/staff) by default
     const visibleToSupplier = user.role === 'supplier'
+    const uploaded: unknown[] = []
+    const failed: Array<{ filename: string; error: string }> = []
 
-    const { rows } = await pool.query(
-      `INSERT INTO order_files
-         (container_number, filename, stored_name, file_size, mime_type, uploaded_by, visible_to_supplier, visible_to_customer)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING *`,
-      [container, file.name, storedName, file.size, file.type, user.userId, visibleToSupplier]
+    for (const file of files) {
+      const storedName = generateStoredName(file.name)
+      const filePath = getFilePath(year, month, container, storedName)
+      const categoryCode = normalizeFileCategoryCode(formData.get(`category:${file.name}`) ?? formData.get('category_code'))
+
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer())
+        fs.writeFileSync(filePath, buffer)
+
+        const { rows } = await pool.query(
+          `INSERT INTO order_files
+             (container_number, filename, stored_name, file_size, mime_type, uploaded_by, category_code, visible_to_supplier, visible_to_customer)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING *`,
+          [container, file.name, storedName, file.size, file.type, user.userId, categoryCode, visibleToSupplier]
+        )
+
+        uploaded.push(rows[0])
+      } catch (error) {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath)
+        }
+        console.error(error)
+        failed.push({ filename: file.name, error: 'Upload failed' })
+      }
+    }
+
+    await ensureChecklistForContainer(container, pool, user.userId)
+
+    if (uploaded.length === 0) {
+      return NextResponse.json(
+        {
+          error: failed[0]?.error ?? 'Upload failed',
+          uploaded: [],
+          failed,
+          total: files.length,
+        },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        uploaded,
+        failed,
+        total: files.length,
+      },
+      { status: failed.length > 0 ? 207 : 201 }
     )
-
-    return NextResponse.json(rows[0], { status: 201 })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -48,10 +48,18 @@ const DB_INSERT_ORDER = [
     columns: ['container_number', 'role'],
   },
   {
+    name: 'order_file_categories',
+    columns: ['category_code', 'label_en', 'label_zh', 'sort_order', 'required', 'created_at'],
+  },
+  {
+    name: 'order_file_checklist',
+    columns: ['container_number', 'category_code', 'status', 'note', 'updated_by', 'updated_at'],
+  },
+  {
     name: 'order_files',
     columns: [
       'file_id', 'container_number', 'filename', 'stored_name', 'file_size', 'mime_type',
-      'uploaded_by', 'uploaded_at', 'visible_to_customer', 'visible_to_supplier', 'visible_to_accountant',
+      'uploaded_by', 'uploaded_at', 'category_code', 'visible_to_customer', 'visible_to_supplier', 'visible_to_accountant',
     ],
   },
   {
@@ -82,6 +90,8 @@ const DB_INSERT_ORDER = [
 
 const DB_TRUNCATE_ORDER = [
   'order_visibility',
+  'order_file_checklist',
+  'order_file_categories',
   'order_files',
   'accountant_files',
   'order_month',

@@ -1,4 +1,5 @@
 export type Role = 'admin' | 'staff' | 'supplier' | 'customer' | 'accountant'
+export type FileChecklistStatus = 'missing' | 'uploaded' | 'reviewing' | 'approved' | 'rejected'
 
 export interface JWTPayload {
   userId: string
@@ -65,6 +66,14 @@ export interface Order {
   tc_invoice_no: string | null
   tc_seller: string | null
   tc_buyer: string | null
+  checklist_required_count?: number
+  checklist_uploaded_count?: number
+  checklist_reviewing_count?: number
+  checklist_approved_count?: number
+  checklist_rejected_count?: number
+  checklist_missing_count?: number
+  checklist_overall_status?: FileChecklistStatus
+  missing_required_categories?: string[]
   created_at: string
 }
 
@@ -92,9 +101,34 @@ export interface OrderFile {
   mime_type:            string | null
   uploaded_by:          string | null
   uploaded_at:          string
+  category_code:        string
   visible_to_customer:   boolean
   visible_to_supplier:   boolean
   visible_to_accountant: boolean
+  category_label_en?:    string
+  category_label_zh?:    string
+}
+
+export interface OrderFileCategory {
+  category_code: string
+  label_en: string
+  label_zh: string
+  sort_order: number
+  required: boolean
+}
+
+export interface OrderFileChecklistItem {
+  container_number: string
+  category_code: string
+  label_en: string
+  label_zh: string
+  sort_order: number
+  required: boolean
+  status: FileChecklistStatus
+  note: string | null
+  updated_by: string | null
+  updated_at: string
+  file_count: number
 }
 
 export interface AccountantFile {

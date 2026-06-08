@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Order, User } from '@/types'
+import { FileChecklistStatus, Order, User } from '@/types'
 import ExcelImport from '@/components/ExcelImport'
 
 type ColDef = { key: string; label: string; type: 'text' | 'number' | 'date' | 'select'; readOnly?: boolean; minWidth: number }
@@ -47,6 +47,39 @@ type FileSearchResult = {
   uploaded_at: string
   uploaded_by_name: string | null
 }
+
+type PeriodSummary = {
+  total: number
+  unassignedCount: number
+  missingOrdersCount: number
+  reviewingOrdersCount: number
+  rejectedOrdersCount: number
+  approvedOrdersCount: number
+  uploadedOrdersCount: number
+  months: Record<string, { count: number; missingCount: number }>
+  quarters: Record<string, { count: number; missingCount: number }>
+}
+
+const EMPTY_PERIOD_SUMMARY: PeriodSummary = {
+  total: 0,
+  unassignedCount: 0,
+  missingOrdersCount: 0,
+  reviewingOrdersCount: 0,
+  rejectedOrdersCount: 0,
+  approvedOrdersCount: 0,
+  uploadedOrdersCount: 0,
+  months: {},
+  quarters: {},
+}
+
+const CHECKLIST_FILTER_OPTIONS: Array<{ key: 'all' | FileChecklistStatus; label: string }> = [
+  { key: 'all', label: 'All / 全部' },
+  { key: 'missing', label: 'Missing / 缺失' },
+  { key: 'reviewing', label: 'Reviewing / 待审核' },
+  { key: 'rejected', label: 'Rejected / 需重传' },
+  { key: 'uploaded', label: 'Uploaded / 已上传' },
+  { key: 'approved', label: 'Approved / 已确认' },
+]
 
 function formatSize(bytes: number | null): string {
   if (!bytes) return '—'
@@ -209,8 +242,11 @@ export default function StaffOrdersPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [periodLoading, setPeriodLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'month' | 'quarter'>('month')
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null)
+  const [checklistFilter, setChecklistFilter] = useState<'all' | FileChecklistStatus>('all')
+  const [summary, setSummary] = useState<PeriodSummary>(EMPTY_PERIOD_SUMMARY)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [error, setError] = useState('')
@@ -230,36 +266,109 @@ export default function StaffOrdersPage() {
   const [showSearch, setShowSearch] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    fetch('/api/users', { headers: authHeaders() })
-      .then(r => r.json())
-      .then(data => {
-        const all = Array.isArray(data) ? data : []
-        setCustomers(all.filter((u: User) => u.role === 'customer'))
-        setSuppliers(all.filter((u: User) => u.role === 'supplier'))
-      })
-  }, [])
+  function normaliseSummary(data: unknown): PeriodSummary {
+    if (!data || typeof data !== 'object') return EMPTY_PERIOD_SUMMARY
+    const payload = data as {
+      total?: number
+      unassignedCount?: number
+      missingOrdersCount?: number
+      reviewingOrdersCount?: number
+      rejectedOrdersCount?: number
+      approvedOrdersCount?: number
+      uploadedOrdersCount?: number
+      months?: Array<{ key: string; count: number; missing_count?: number }>
+      quarters?: Array<{ key: string; count: number; missing_count?: number }>
+    }
+    return {
+      total: payload.total ?? 0,
+      unassignedCount: payload.unassignedCount ?? 0,
+      missingOrdersCount: payload.missingOrdersCount ?? 0,
+      reviewingOrdersCount: payload.reviewingOrdersCount ?? 0,
+      rejectedOrdersCount: payload.rejectedOrdersCount ?? 0,
+      approvedOrdersCount: payload.approvedOrdersCount ?? 0,
+      uploadedOrdersCount: payload.uploadedOrdersCount ?? 0,
+      months: Object.fromEntries((payload.months ?? []).map(item => [item.key, { count: item.count, missingCount: item.missing_count ?? 0 }])),
+      quarters: Object.fromEntries((payload.quarters ?? []).map(item => [item.key, { count: item.count, missingCount: item.missing_count ?? 0 }])),
+    }
+  }
 
-  async function fetchOrders() {
-    setLoading(true)
-    const res = await fetch('/api/orders', { headers: authHeaders() })
+  async function fetchSummary() {
+    const res = await fetch('/api/orders?summary=periods', { headers: authHeaders() })
+    const data = await res.json()
+    setSummary(normaliseSummary(data))
+  }
+
+  async function fetchUsers() {
+    const res = await fetch('/api/users', { headers: authHeaders() })
+    const data = await res.json()
+    const all = Array.isArray(data) ? data : []
+    setCustomers(all.filter((u: User) => u.role === 'customer'))
+    setSuppliers(all.filter((u: User) => u.role === 'supplier'))
+  }
+
+  async function fetchPeriodOrders(periodKey = selectedPeriod, mode = viewMode, nextChecklistFilter = checklistFilter) {
+    if (!periodKey) {
+      setOrders([])
+      return
+    }
+    setPeriodLoading(true)
+    const params = new URLSearchParams({
+      periodType: mode,
+      period: periodKey,
+    })
+    if (nextChecklistFilter !== 'all') {
+      params.set('checklistStatus', nextChecklistFilter)
+    }
+    const res = await fetch(`/api/orders?${params.toString()}`, { headers: authHeaders() })
     const data = await res.json()
     setOrders(Array.isArray(data) ? data : [])
-    setLoading(false)
+    setPeriodLoading(false)
   }
 
-  useEffect(() => { fetchOrders() }, [])
-
-  function ordersForMonth(monthKey: string): Order[] {
-    return orders.filter(o => o.belonged_month === monthKey)
+  async function refreshSummaryAndCurrentPeriod() {
+    await Promise.all([
+      fetchSummary(),
+      selectedPeriod ? fetchPeriodOrders(selectedPeriod, viewMode) : Promise.resolve(),
+    ])
   }
 
-  function ordersForQuarter(quarterKey: string): Order[] {
-    return orders.filter(o => o.belonged_quarter === quarterKey)
+  useEffect(() => {
+    async function bootstrap() {
+      setLoading(true)
+      await Promise.all([fetchUsers(), fetchSummary()])
+      setLoading(false)
+    }
+    void bootstrap()
+  }, [])
+
+  useEffect(() => {
+    if (!selectedPeriod) {
+      setOrders([])
+      return
+    }
+    void fetchPeriodOrders(selectedPeriod, viewMode)
+  }, [selectedPeriod, viewMode, checklistFilter])
+
+  function countForMonth(monthKey: string): number {
+    return summary.months[monthKey]?.count ?? 0
   }
 
-  function ordersUnassigned(): Order[] {
-    return orders.filter(o => !o.belonged_month)
+  function countForQuarter(quarterKey: string): number {
+    return summary.quarters[quarterKey]?.count ?? 0
+  }
+
+  function missingForMonth(monthKey: string): number {
+    return summary.months[monthKey]?.missingCount ?? 0
+  }
+
+  function missingForQuarter(quarterKey: string): number {
+    return summary.quarters[quarterKey]?.missingCount ?? 0
+  }
+
+  function matchesSelectedPeriod(order: Order, periodKey = selectedPeriod, mode = viewMode): boolean {
+    if (!periodKey) return true
+    if (periodKey === 'unassigned') return !order.belonged_month
+    return mode === 'month' ? order.belonged_month === periodKey : order.belonged_quarter === periodKey
   }
 
   function openCreate() {
@@ -306,13 +415,13 @@ export default function StaffOrdersPage() {
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Error'); return }
     setShowForm(false)
-    fetchOrders()
+    await refreshSummaryAndCurrentPeriod()
   }
 
   async function handleDelete(containerNumber: string) {
     if (!confirm(`Delete order "${containerNumber}"? / 确认删除此订单？`)) return
     await fetch(`/api/orders/${containerNumber}`, { method: 'DELETE', headers: authHeaders() })
-    fetchOrders()
+    await refreshSummaryAndCurrentPeriod()
   }
 
   async function handleSearch(q: string) {
@@ -364,7 +473,15 @@ export default function StaffOrdersPage() {
     })
     if (res.ok) {
       const updated = await res.json()
-      setOrders(prev => prev.map(o => o.container_number === cn ? updated : o))
+      setOrders(prev => {
+        if (!matchesSelectedPeriod(updated)) {
+          return prev.filter(o => o.container_number !== cn)
+        }
+        return prev.map(o => o.container_number === cn ? updated : o)
+      })
+      if (field === 'belonged_month' || field === 'belonged_quarter') {
+        await fetchSummary()
+      }
     }
     setSavingRows(prev => { const s = new Set(prev); s.delete(cn); return s })
   }
@@ -404,8 +521,7 @@ export default function StaffOrdersPage() {
       body: JSON.stringify({ container_number: cn, status: 'pending', ...base }),
     })
     if (res.ok) {
-      const created = await res.json()
-      setOrders(prev => [...prev, created])
+      await refreshSummaryAndCurrentPeriod()
       setDraftRows(prev => { const n = { ...prev }; delete n[rowIdx]; return n })
     }
     setSavingRows(prev => { const s = new Set(prev); s.delete(`__draft_${rowIdx}`); return s })
@@ -418,13 +534,7 @@ export default function StaffOrdersPage() {
     }
   }
 
-  // Determine which orders to show in the selected period
-  const periodOrders: Order[] = (() => {
-    if (!selectedPeriod) return []
-    if (selectedPeriod === 'unassigned') return ordersUnassigned()
-    if (viewMode === 'month') return ordersForMonth(selectedPeriod)
-    return ordersForQuarter(selectedPeriod)
-  })()
+  const periodOrders = orders
 
   const selectedLabel = selectedPeriod === 'unassigned' ? 'Unassigned / 未分配'
     : viewMode === 'month'
@@ -458,7 +568,7 @@ export default function StaffOrdersPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-text-primary">Orders / 订单管理</h1>
-          <p className="text-sm text-text-secondary mt-0.5">{orders.length} orders total</p>
+          <p className="text-sm text-text-secondary mt-0.5">{summary.total} orders total</p>
         </div>
         <div className="flex items-center gap-3">
           {/* Search bar */}
@@ -478,13 +588,31 @@ export default function StaffOrdersPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-700 border border-red-100">
+          Missing: {summary.missingOrdersCount}
+        </span>
+        <span className="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+          Reviewing: {summary.reviewingOrdersCount}
+        </span>
+        <span className="text-xs px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+          Rejected: {summary.rejectedOrdersCount}
+        </span>
+        <span className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+          Uploaded: {summary.uploadedOrdersCount}
+        </span>
+        <span className="text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-100">
+          Approved: {summary.approvedOrdersCount}
+        </span>
+      </div>
+
       {/* Excel Import */}
       <div className="mb-4">
         <ExcelImport
           defaultBelongedMonth={importDefaultBelongedMonth}
           defaultBelongedQuarter={importDefaultBelongedQuarter}
           onImportComplete={() => {
-            fetchOrders()
+            void refreshSummaryAndCurrentPeriod()
           }}
         />
       </div>
@@ -563,32 +691,61 @@ export default function StaffOrdersPage() {
             ← Back / 返回
           </button>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-text-primary">{selectedLabel}</h2>
-            <button onClick={openCreate} className="bg-primary hover:bg-primary-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-              + New Order / 新建订单
-            </button>
+            <div>
+              <h2 className="text-base font-semibold text-text-primary">{selectedLabel}</h2>
+              <p className="text-xs text-text-secondary mt-1">Checklist filter / 清单筛选</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={checklistFilter}
+                onChange={e => setChecklistFilter(e.target.value as 'all' | FileChecklistStatus)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {CHECKLIST_FILTER_OPTIONS.map(option => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+              <button onClick={openCreate} className="bg-primary hover:bg-primary-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                + New Order / 新建订单
+              </button>
+            </div>
           </div>
-          <div
-            ref={tableContainerRef}
-            onScroll={handleTableScroll}
-            className="bg-white rounded-xl border border-gray-100 overflow-x-auto overflow-y-auto"
-            style={{ maxHeight: '640px' }}
-          >
-            <table className="text-sm border-collapse" style={{ minWidth: `${TABLE_COLS.reduce((s, c) => s + c.minWidth, 0) + 100}px` }}>
-              <thead className="sticky top-0 z-10">
-                <tr className="border-b border-gray-200 bg-gray-50 text-text-secondary">
-                  {TABLE_COLS.map(col => (
-                    <th key={col.key} style={{ minWidth: col.minWidth }} className="text-left px-3 py-2.5 font-medium whitespace-nowrap">{col.label}</th>
-                  ))}
-                  <th className="text-right px-3 py-2.5 font-medium sticky right-0 bg-gray-50">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          {periodLoading ? (
+            <div className="bg-white rounded-xl border border-gray-100 px-4 py-8 text-sm text-text-secondary">
+              Loading period data... / 加载周期数据中...
+            </div>
+          ) : (
+            <div
+              ref={tableContainerRef}
+              onScroll={handleTableScroll}
+              className="bg-white rounded-xl border border-gray-100 overflow-x-auto overflow-y-auto"
+              style={{ maxHeight: '640px' }}
+            >
+              <table className="text-sm border-collapse" style={{ minWidth: `${TABLE_COLS.reduce((s, c) => s + c.minWidth, 0) + 100}px` }}>
+                <thead className="sticky top-0 z-10">
+                  <tr className="border-b border-gray-200 bg-gray-50 text-text-secondary">
+                    {TABLE_COLS.map(col => (
+                      <th key={col.key} style={{ minWidth: col.minWidth }} className="text-left px-3 py-2.5 font-medium whitespace-nowrap">{col.label}</th>
+                    ))}
+                    <th className="text-right px-3 py-2.5 font-medium sticky right-0 bg-gray-50">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {/* Existing order rows */}
                 {periodOrders.map(order => {
                   const isSaving = savingRows.has(order.container_number)
+                  const hasChecklistMissing = (order.checklist_missing_count ?? 0) > 0
+                  const checklistStatus = order.checklist_overall_status ?? 'missing'
                   return (
-                    <tr key={order.container_number} className={`border-b border-gray-50 ${isSaving ? 'opacity-60' : 'hover:bg-blue-50/30'} transition-colors`}>
+                    <tr key={order.container_number} className={`border-b border-gray-50 ${
+                      isSaving
+                        ? 'opacity-60'
+                        : hasChecklistMissing
+                          ? 'bg-red-50/70 hover:bg-red-50'
+                          : checklistStatus === 'reviewing'
+                            ? 'bg-amber-50/60 hover:bg-amber-50'
+                            : 'hover:bg-blue-50/30'
+                    } transition-colors`}>
                       {TABLE_COLS.map(col => {
                         const isActive = activeCell?.cn === order.container_number && activeCell?.field === col.key
                         const rawVal = order[col.key as keyof Order]
@@ -596,8 +753,35 @@ export default function StaffOrdersPage() {
                         if (col.readOnly) {
                           return (
                             <td key={col.key} style={{ minWidth: col.minWidth }} className="px-3 py-2 font-mono font-semibold whitespace-nowrap">
-                              <button onClick={() => router.push(`/portal/staff/orders/${order.container_number}?period=${selectedPeriod}&mode=${viewMode}`)}
-                                className="text-blue-600 hover:underline">{cellVal || '—'}</button>
+                              <div className="flex flex-col gap-1">
+                                <button onClick={() => router.push(`/portal/staff/orders/${order.container_number}?period=${selectedPeriod}&mode=${viewMode}`)}
+                                  className="text-blue-600 hover:underline text-left">{cellVal || '—'}</button>
+                                {(order.checklist_overall_status || order.checklist_missing_count) && (
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                      hasChecklistMissing
+                                        ? 'bg-red-100 text-red-700'
+                                        : checklistStatus === 'reviewing'
+                                          ? 'bg-amber-100 text-amber-700'
+                                          : checklistStatus === 'approved'
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-blue-100 text-blue-700'
+                                    }`}>
+                                      {checklistStatus}
+                                    </span>
+                                    {hasChecklistMissing && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                                        Missing {(order.checklist_missing_count ?? 0)}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {hasChecklistMissing && order.missing_required_categories && order.missing_required_categories.length > 0 && (
+                                  <span className="text-[10px] text-red-600 max-w-[180px] truncate" title={order.missing_required_categories.join('、')}>
+                                    {order.missing_required_categories.join('、')}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                           )
                         }
@@ -721,28 +905,33 @@ export default function StaffOrdersPage() {
                     </tr>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : viewMode === 'month' ? (
         /* ── Month grid ── */
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {MONTH_PERIODS.map(p => {
-            const count = ordersForMonth(p.key).length
+            const count = countForMonth(p.key)
+            const missingCount = missingForMonth(p.key)
             return (
               <button key={p.key} onClick={() => setSelectedPeriod(p.key)}
-                className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all">
+                className={`bg-white border rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all ${
+                  missingCount > 0 ? 'border-red-200 bg-red-50/40' : 'border-gray-100'
+                }`}>
                 <div className="text-base font-semibold text-text-primary">{p.label}</div>
                 <div className="text-xs text-text-secondary mt-1">{count} order{count !== 1 ? 's' : ''}</div>
+                {missingCount > 0 && <div className="text-xs text-red-600 mt-1">{missingCount} missing / 缺失</div>}
               </button>
             )
           })}
-          {ordersUnassigned().length > 0 && (
+          {summary.unassignedCount > 0 && (
             <button onClick={() => setSelectedPeriod('unassigned')}
               className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all">
               <div className="text-base font-semibold text-text-primary">Unassigned / 未分配</div>
-              <div className="text-xs text-text-secondary mt-1">{ordersUnassigned().length} order{ordersUnassigned().length !== 1 ? 's' : ''}</div>
+              <div className="text-xs text-text-secondary mt-1">{summary.unassignedCount} order{summary.unassignedCount !== 1 ? 's' : ''}</div>
             </button>
           )}
         </div>
@@ -750,20 +939,24 @@ export default function StaffOrdersPage() {
         /* ── Quarter grid ── */
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {QUARTER_PERIODS.map(p => {
-            const count = ordersForQuarter(p.key).length
+            const count = countForQuarter(p.key)
+            const missingCount = missingForQuarter(p.key)
             return (
               <button key={p.key} onClick={() => setSelectedPeriod(p.key)}
-                className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all">
+                className={`bg-white border rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all ${
+                  missingCount > 0 ? 'border-red-200 bg-red-50/40' : 'border-gray-100'
+                }`}>
                 <div className="text-base font-semibold text-text-primary">{p.label}</div>
                 <div className="text-xs text-text-secondary mt-1">{count} order{count !== 1 ? 's' : ''}</div>
+                {missingCount > 0 && <div className="text-xs text-red-600 mt-1">{missingCount} missing / 缺失</div>}
               </button>
             )
           })}
-          {ordersUnassigned().length > 0 && (
+          {summary.unassignedCount > 0 && (
             <button onClick={() => setSelectedPeriod('unassigned')}
               className="bg-white border border-gray-100 rounded-xl px-5 py-4 text-left hover:border-primary hover:shadow-sm transition-all">
               <div className="text-base font-semibold text-text-primary">Unassigned / 未分配</div>
-              <div className="text-xs text-text-secondary mt-1">{ordersUnassigned().length} order{ordersUnassigned().length !== 1 ? 's' : ''}</div>
+              <div className="text-xs text-text-secondary mt-1">{summary.unassignedCount} order{summary.unassignedCount !== 1 ? 's' : ''}</div>
             </button>
           )}
         </div>
