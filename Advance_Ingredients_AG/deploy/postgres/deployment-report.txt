@@ -1,0 +1,16 @@
+status=success
+container_name=aiag-postgres
+container_id=bf6599b636c106824a1baf2a45743819435b18bc2e77bbf8bed3bbb1f081ef23
+image=postgres:16
+host=127.0.0.1
+host_port=5432
+db_name=project_db
+db_user=project_user
+data_volume=aiag-postgres-data
+schema_file=/home/ubuntu/AIAG/Advance_Ingredients_AG/db/schema.sql
+seed_file=/home/ubuntu/AIAG/Advance_Ingredients_AG/deploy/postgres/init/10-bootstrap-users.sql
+seed_imported=1
+started_at=2026-05-28T10:00:33Z
+db_version=PostgreSQL 16.14 (Debian 16.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+public_table_count=10
+connect_command=psql -h 127.0.0.1 -p 5432 -U project_user -d project_db
