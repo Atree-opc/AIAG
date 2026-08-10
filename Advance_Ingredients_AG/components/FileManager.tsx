@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FileChecklistStatus, OrderFile, OrderFileChecklistItem } from '@/types'
 import { Role } from '@/types'
-import { FILE_CATEGORY_TEMPLATES } from '@/lib/file-checklist-config'
+import { FILE_CATEGORY_APPEARANCE, FILE_CATEGORY_TEMPLATES } from '@/lib/file-checklist-config'
 import { postFormDataWithProgress, UploadPhase } from '@/lib/upload-with-progress'
 
 function jsonHeaders() {
@@ -18,6 +18,17 @@ interface Props {
 }
 
 type FileRow = OrderFile & { uploaded_by_name?: string }
+type CategorySection = {
+  category_code: string
+  label_en: string
+  label_zh: string
+  required: boolean
+  status?: FileChecklistStatus
+  file_count: number
+  visible_to_supplier: boolean
+  visible_to_customer: boolean
+  visible_to_accountant: boolean
+}
 
 type Folder = 'admin' | 'supplier' | 'customer' | 'accountant'
 
@@ -47,6 +58,7 @@ export default function FileManager({ containerNumber, canUpload, canDelete, use
   const [message, setMessage] = useState('')
   const [activeFolder, setActiveFolder] = useState<Folder>('admin')
   const [uploadCategory, setUploadCategory] = useState('uncategorized')
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const canManageChecklist = userRole === 'admin' || userRole === 'staff'
@@ -143,6 +155,26 @@ export default function FileManager({ containerNumber, canUpload, canDelete, use
     setChecklist(items => items.map(item => item.category_code === categoryCode ? { ...item, ...updated } : item))
   }
 
+  async function updateCategoryVisibility(
+    categoryCode: string,
+    field: 'visible_to_supplier' | 'visible_to_customer' | 'visible_to_accountant',
+    current: boolean
+  ) {
+    const res = await fetch(`/api/files/${containerNumber}/__checklist__`, {
+      method: 'POST',
+      headers: jsonHeaders(),
+      body: JSON.stringify({ category_code: categoryCode, [field]: !current }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error ?? 'Category visibility update failed')
+      return
+    }
+
+    await fetchFiles()
+  }
+
   async function handleDelete(fileId: string, filename: string) {
     if (!confirm(`Delete "${filename}"?`)) return
     const res = await fetch(`/api/files/${containerNumber}/${fileId}`, {
@@ -208,6 +240,29 @@ export default function FileManager({ containerNumber, canUpload, canDelete, use
   }
 
   const displayFiles = canSeeTabs ? folderFiles(activeFolder) : files
+  const filesByCategory = new Map<string, FileRow[]>()
+  for (const file of displayFiles) {
+    const categoryCode = file.category_code || 'uncategorized'
+    const currentFiles = filesByCategory.get(categoryCode) ?? []
+    currentFiles.push(file)
+    filesByCategory.set(categoryCode, currentFiles)
+  }
+
+  const categorySections: CategorySection[] = FILE_CATEGORY_TEMPLATES.map(template => {
+    const checklistItem = checklist.find(item => item.category_code === template.code)
+    const categoryFiles = filesByCategory.get(template.code) ?? []
+    return {
+      category_code: template.code,
+      label_en: checklistItem?.label_en ?? template.label_en,
+      label_zh: checklistItem?.label_zh ?? template.label_zh,
+      required: checklistItem?.required ?? template.required,
+      status: checklistItem?.status,
+      file_count: categoryFiles.length,
+      visible_to_supplier: checklistItem?.visible_to_supplier ?? false,
+      visible_to_customer: checklistItem?.visible_to_customer ?? false,
+      visible_to_accountant: checklistItem?.visible_to_accountant ?? false,
+    }
+  })
 
   const FOLDERS: { key: Folder; label: string; count: number }[] = [
     { key: 'admin',      label: 'All / 全部',        count: files.length },
@@ -265,80 +320,6 @@ export default function FileManager({ containerNumber, canUpload, canDelete, use
         </div>
       )}
 
-      {checklist.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
-          {checklist.map(item => (
-            <div
-              key={item.category_code}
-              className={`border rounded-xl p-3 ${
-                item.status === 'missing'
-                  ? 'border-red-200 bg-red-50/70'
-                  : item.status === 'reviewing'
-                    ? 'border-amber-200 bg-amber-50/70'
-                    : item.status === 'rejected'
-                      ? 'border-orange-200 bg-orange-50/70'
-                      : item.status === 'approved'
-                        ? 'border-green-200 bg-green-50/70'
-                        : 'border-gray-100 bg-white'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">
-                    {item.label_en} / {item.label_zh}
-                  </p>
-                  <p className="text-xs text-text-secondary mt-1">
-                    {item.file_count} file(s){item.required ? ' · Required / 必需' : ' · Optional / 可选'}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  {canManageChecklist ? (
-                    <select
-                      value={item.status}
-                      onChange={e => updateChecklist(item.category_code, { status: e.target.value as FileChecklistStatus })}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
-                    >
-                      {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-text-secondary">
-                      {CHECKLIST_STATUS_LABELS[item.status]}
-                    </span>
-                  )}
-                  {canUpload && (
-                    <button
-                      type="button"
-                      onClick={() => openCategoryUpload(item.category_code)}
-                      disabled={uploading}
-                      className="text-xs px-2 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-50"
-                    >
-                      Upload / 上传
-                    </button>
-                  )}
-                </div>
-              </div>
-              {canManageChecklist ? (
-                <input
-                  defaultValue={item.note ?? ''}
-                  onBlur={e => {
-                    const nextNote = e.target.value.trim()
-                    if (nextNote !== (item.note ?? '')) {
-                      updateChecklist(item.category_code, { note: nextNote })
-                    }
-                  }}
-                  placeholder="Checklist note / 清单备注"
-                  className="mt-3 w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5"
-                />
-              ) : item.note ? (
-                <p className="mt-3 text-xs text-text-secondary">{item.note}</p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Folder tabs — admin and staff only */}
       {canSeeTabs && (
         <div className="flex gap-1 mb-3">
@@ -360,92 +341,204 @@ export default function FileManager({ containerNumber, canUpload, canDelete, use
 
       {loading ? (
         <p className="text-xs text-text-muted">Loading... / 加载中...</p>
-      ) : displayFiles.length === 0 ? (
-        <p className="text-xs text-text-muted">No files / 暂无文件</p>
       ) : (
-        <div className="border border-gray-100 rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-text-secondary">
-                <th className="text-left px-3 py-2 font-medium">Filename / 文件名</th>
-                <th className="text-left px-3 py-2 font-medium">Size / 大小</th>
-                <th className="text-left px-3 py-2 font-medium">Category / 分类</th>
-                <th className="text-left px-3 py-2 font-medium">Uploaded by / 上传者</th>
-                <th className="text-left px-3 py-2 font-medium">Date / 日期</th>
-                {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Supplier</th>}
-                {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Customer</th>}
-                {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Finance</th>}
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayFiles.map(f => (
-                <tr key={f.file_id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                  <td className="px-3 py-2 max-w-[180px] truncate" title={f.filename}>{f.filename}</td>
-                  <td className="px-3 py-2 text-text-secondary">{formatSize(f.file_size)}</td>
-                  <td className="px-3 py-2 text-text-secondary">
-                    {canManageChecklist ? (
-                      <select
-                        value={f.category_code ?? 'uncategorized'}
-                        onChange={e => handleCategoryChange(f.file_id, e.target.value)}
-                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+        <div className="space-y-3">
+          {categorySections.map(section => {
+            const sectionFiles = filesByCategory.get(section.category_code) ?? []
+            const expanded = expandedCategories[section.category_code] ?? section.file_count > 0
+            const appearance = FILE_CATEGORY_APPEARANCE[section.category_code] ?? FILE_CATEGORY_APPEARANCE.uncategorized
+
+            return (
+              <div key={section.category_code} className={`border rounded-xl overflow-hidden shadow-sm ${appearance.panel}`}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedCategories(current => ({
+                    ...current,
+                    [section.category_code]: !expanded,
+                  }))}
+                  className={`w-full px-4 py-3 flex items-center justify-between gap-3 text-left ${appearance.header}`}
+                >
+                  <div className="min-w-0 flex items-center gap-3">
+                    <span className={`h-3 w-3 rounded-full shrink-0 ${appearance.dot}`} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-text-primary">
+                          {section.label_en} / {section.label_zh}
+                        </p>
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${appearance.badge}`}>
+                          {section.required ? 'Required / 必需' : 'Optional / 可选'}
+                        </span>
+                        {section.status && (
+                          <span className="inline-flex items-center rounded-full border border-gray-200 bg-white/85 px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+                            {CHECKLIST_STATUS_LABELS[section.status]}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-text-secondary mt-1">
+                        {section.file_count} file(s) / {section.file_count} 个文件
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {canManageVisibility && (
+                      <div
+                        className="flex items-center gap-3 rounded-lg border border-white/70 bg-white/80 px-3 py-1.5"
+                        onClick={e => e.stopPropagation()}
                       >
-                        {FILE_CATEGORY_TEMPLATES.map(category => (
-                          <option key={category.code} value={category.code}>
-                            {category.label_en} / {category.label_zh}
-                          </option>
+                        <label className="flex items-center gap-1 text-[11px] text-text-secondary">
+                          <input
+                            type="checkbox"
+                            checked={section.visible_to_supplier}
+                            onChange={() => updateCategoryVisibility(section.category_code, 'visible_to_supplier', section.visible_to_supplier)}
+                          />
+                          Supplier
+                        </label>
+                        <label className="flex items-center gap-1 text-[11px] text-text-secondary">
+                          <input
+                            type="checkbox"
+                            checked={section.visible_to_customer}
+                            onChange={() => updateCategoryVisibility(section.category_code, 'visible_to_customer', section.visible_to_customer)}
+                          />
+                          Customer
+                        </label>
+                        <label className="flex items-center gap-1 text-[11px] text-text-secondary">
+                          <input
+                            type="checkbox"
+                            checked={section.visible_to_accountant}
+                            onChange={() => updateCategoryVisibility(section.category_code, 'visible_to_accountant', section.visible_to_accountant)}
+                          />
+                          Finance
+                        </label>
+                      </div>
+                    )}
+                    {canManageChecklist && section.status && (
+                      <select
+                        value={section.status}
+                        onChange={e => updateChecklist(section.category_code, { status: e.target.value as FileChecklistStatus })}
+                        onClick={e => e.stopPropagation()}
+                        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
+                      >
+                        {Object.entries(CHECKLIST_STATUS_LABELS).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
                         ))}
                       </select>
-                    ) : (
-                      <span>{f.category_label_en ?? f.category_code}</span>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-text-secondary">{f.uploaded_by_name ?? '—'}</td>
-                  <td className="px-3 py-2 text-text-secondary">{f.uploaded_at?.slice(0, 10)}</td>
-                  {canManageVisibility && (
-                    <td className="px-3 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={f.visible_to_supplier}
-                        onChange={() => toggleVisibility(f.file_id, 'visible_to_supplier', f.visible_to_supplier)}
-                        className="cursor-pointer"
-                      />
-                    </td>
-                  )}
-                  {canManageVisibility && (
-                    <td className="px-3 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={f.visible_to_customer}
-                        onChange={() => toggleVisibility(f.file_id, 'visible_to_customer', f.visible_to_customer)}
-                        className="cursor-pointer"
-                      />
-                    </td>
-                  )}
-                  {canManageVisibility && (
-                    <td className="px-3 py-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={f.visible_to_accountant}
-                        onChange={() => toggleVisibility(f.file_id, 'visible_to_accountant', f.visible_to_accountant)}
-                        className="cursor-pointer"
-                      />
-                    </td>
-                  )}
-                  <td className="px-3 py-2 flex gap-2 justify-end">
-                    <button onClick={() => handleDownload(f.file_id, f.filename)} className="text-blue-600 hover:underline">
-                      Download / 下载
-                    </button>
-                    {canDelete && (
-                      <button onClick={() => handleDelete(f.file_id, f.filename)} className="text-red-500 hover:underline">
-                        Delete / 删除
+                    {canUpload && (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation()
+                          openCategoryUpload(section.category_code)
+                        }}
+                        disabled={uploading}
+                        className="text-xs px-2 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-50"
+                      >
+                        Upload / 上传
                       </button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span className="text-xs text-text-secondary">{expanded ? 'Hide / 收起' : 'Show / 展开'}</span>
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="border-t border-gray-100 bg-white/80">
+                    {sectionFiles.length === 0 ? (
+                      <p className="px-4 py-4 text-xs text-text-muted">
+                        No files in this category / 该类型下暂无文件
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100 text-text-secondary">
+                              <th className="text-left px-3 py-2 font-medium">Filename / 文件名</th>
+                              <th className="text-left px-3 py-2 font-medium">Size / 大小</th>
+                              <th className="text-left px-3 py-2 font-medium">Uploaded by / 上传者</th>
+                              <th className="text-left px-3 py-2 font-medium">Date / 日期</th>
+                              {canManageChecklist && <th className="text-left px-3 py-2 font-medium">Move To / 移动到</th>}
+                              {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Supplier</th>}
+                              {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Customer</th>}
+                              {canManageVisibility && <th className="text-center px-3 py-2 font-medium">Finance</th>}
+                              <th className="px-3 py-2"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sectionFiles.map(f => (
+                              <tr key={f.file_id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                                <td className="px-3 py-2 max-w-[220px] truncate" title={f.filename}>{f.filename}</td>
+                                <td className="px-3 py-2 text-text-secondary">{formatSize(f.file_size)}</td>
+                                <td className="px-3 py-2 text-text-secondary">{f.uploaded_by_name ?? '—'}</td>
+                                <td className="px-3 py-2 text-text-secondary">{f.uploaded_at?.slice(0, 10)}</td>
+                                {canManageChecklist && (
+                                  <td className="px-3 py-2 text-text-secondary">
+                                    <select
+                                      value={f.category_code ?? 'uncategorized'}
+                                      onChange={e => handleCategoryChange(f.file_id, e.target.value)}
+                                      className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                                    >
+                                      {FILE_CATEGORY_TEMPLATES.map(category => (
+                                        <option key={category.code} value={category.code}>
+                                          {category.label_en} / {category.label_zh}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                )}
+                                {canManageVisibility && (
+                                  <td className="px-3 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={f.visible_to_supplier}
+                                      onChange={() => toggleVisibility(f.file_id, 'visible_to_supplier', f.visible_to_supplier)}
+                                      className="cursor-pointer"
+                                    />
+                                  </td>
+                                )}
+                                {canManageVisibility && (
+                                  <td className="px-3 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={f.visible_to_customer}
+                                      onChange={() => toggleVisibility(f.file_id, 'visible_to_customer', f.visible_to_customer)}
+                                      className="cursor-pointer"
+                                    />
+                                  </td>
+                                )}
+                                {canManageVisibility && (
+                                  <td className="px-3 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={f.visible_to_accountant}
+                                      onChange={() => toggleVisibility(f.file_id, 'visible_to_accountant', f.visible_to_accountant)}
+                                      className="cursor-pointer"
+                                    />
+                                  </td>
+                                )}
+                                <td className="px-3 py-2 flex gap-2 justify-end">
+                                  <button onClick={() => handleDownload(f.file_id, f.filename)} className="text-blue-600 hover:underline">
+                                    Download / 下载
+                                  </button>
+                                  {canDelete && (
+                                    <button onClick={() => handleDelete(f.file_id, f.filename)} className="text-red-500 hover:underline">
+                                      Delete / 删除
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {!displayFiles.length && (
+            <p className="text-xs text-text-muted">No files / 暂无文件</p>
+          )}
         </div>
       )}
     </div>

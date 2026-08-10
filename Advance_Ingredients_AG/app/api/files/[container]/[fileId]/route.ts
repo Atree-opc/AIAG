@@ -4,7 +4,9 @@ import { withAuth } from '@/lib/middleware-helpers'
 import { JWTPayload } from '@/types'
 import { getFilePath, deleteFile } from '@/lib/file-storage'
 import {
+  applyCategoryVisibilityToFiles,
   ensureChecklistForContainer,
+  getCategoryVisibilityDefaults,
   isValidFileChecklistStatus,
   normalizeFileCategoryCode,
   syncChecklistStatuses,
@@ -160,9 +162,25 @@ export const PATCH = withAuth(async (req, user: JWTPayload, context) => {
       updates.push(`visible_to_accountant=$${values.length + 1}`)
       values.push(Boolean(body.visible_to_accountant))
     }
+    let categoryVisibilityDefaults:
+      | {
+          visible_to_supplier: boolean
+          visible_to_customer: boolean
+          visible_to_accountant: boolean
+        }
+      | null = null
+
     if (body.category_code !== undefined) {
+      const normalizedCategoryCode = normalizeFileCategoryCode(body.category_code)
+      categoryVisibilityDefaults = await getCategoryVisibilityDefaults(normalizedCategoryCode)
       updates.push(`category_code=$${values.length + 1}`)
-      values.push(normalizeFileCategoryCode(body.category_code))
+      values.push(normalizedCategoryCode)
+      updates.push(`visible_to_supplier=$${values.length + 1}`)
+      values.push(categoryVisibilityDefaults.visible_to_supplier)
+      updates.push(`visible_to_customer=$${values.length + 1}`)
+      values.push(categoryVisibilityDefaults.visible_to_customer)
+      updates.push(`visible_to_accountant=$${values.length + 1}`)
+      values.push(categoryVisibilityDefaults.visible_to_accountant)
     }
 
     if (updates.length === 0) {
@@ -203,45 +221,100 @@ export const POST = withAuth(async (req, user: JWTPayload, context) => {
 
     const body = await req.json()
     const categoryCode = normalizeFileCategoryCode(body.category_code)
-    const updates: string[] = []
-    const values: unknown[] = []
+    const checklistUpdates: string[] = []
+    const checklistValues: unknown[] = []
 
     if (body.status !== undefined) {
       if (!isValidFileChecklistStatus(body.status)) {
         return NextResponse.json({ error: 'Invalid checklist status' }, { status: 400 })
       }
-      updates.push(`status=$${values.length + 1}`)
-      values.push(body.status)
+      checklistUpdates.push(`status=$${checklistValues.length + 1}`)
+      checklistValues.push(body.status)
     }
 
     if (body.note !== undefined) {
-      updates.push(`note=$${values.length + 1}`)
-      values.push(body.note ? String(body.note).trim() : null)
+      checklistUpdates.push(`note=$${checklistValues.length + 1}`)
+      checklistValues.push(body.note ? String(body.note).trim() : null)
     }
 
-    if (updates.length === 0) {
+    const hasVisibilityUpdate =
+      body.visible_to_supplier !== undefined
+      || body.visible_to_customer !== undefined
+      || body.visible_to_accountant !== undefined
+
+    if (checklistUpdates.length === 0 && !hasVisibilityUpdate) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
-    updates.push(`updated_by=$${values.length + 1}`)
-    values.push(user.userId)
-    updates.push(`updated_at=NOW()`)
+    let checklistRow: Record<string, unknown> | null = null
+    if (checklistUpdates.length > 0) {
+      checklistUpdates.push(`updated_by=$${checklistValues.length + 1}`)
+      checklistValues.push(user.userId)
+      checklistUpdates.push(`updated_at=NOW()`)
 
-    values.push(container, categoryCode)
+      checklistValues.push(container, categoryCode)
 
-    const { rows } = await pool.query(
-      `UPDATE order_file_checklist
-       SET ${updates.join(', ')}
-       WHERE container_number=$${values.length - 1} AND category_code=$${values.length}
-       RETURNING *`,
-      values
-    )
+      const { rows } = await pool.query(
+        `UPDATE order_file_checklist
+         SET ${checklistUpdates.join(', ')}
+         WHERE container_number=$${checklistValues.length - 1} AND category_code=$${checklistValues.length}
+         RETURNING *`,
+        checklistValues
+      )
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: 'Checklist item not found' }, { status: 404 })
+      if (rows.length === 0) {
+        return NextResponse.json({ error: 'Checklist item not found' }, { status: 404 })
+      }
+
+      checklistRow = rows[0]
     }
 
-    return NextResponse.json(rows[0])
+    let categoryVisibility = await getCategoryVisibilityDefaults(categoryCode)
+    if (hasVisibilityUpdate) {
+      const visibilityPayload = {
+        visible_to_supplier:
+          body.visible_to_supplier !== undefined ? Boolean(body.visible_to_supplier) : categoryVisibility.visible_to_supplier,
+        visible_to_customer:
+          body.visible_to_customer !== undefined ? Boolean(body.visible_to_customer) : categoryVisibility.visible_to_customer,
+        visible_to_accountant:
+          body.visible_to_accountant !== undefined ? Boolean(body.visible_to_accountant) : categoryVisibility.visible_to_accountant,
+      }
+
+      const { rows } = await pool.query(
+        `
+          UPDATE order_file_categories
+          SET
+            visible_to_supplier = $1,
+            visible_to_customer = $2,
+            visible_to_accountant = $3
+          WHERE category_code = $4
+          RETURNING visible_to_supplier, visible_to_customer, visible_to_accountant
+        `,
+        [
+          visibilityPayload.visible_to_supplier,
+          visibilityPayload.visible_to_customer,
+          visibilityPayload.visible_to_accountant,
+          categoryCode,
+        ]
+      )
+
+      if (rows.length === 0) {
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+      }
+
+      categoryVisibility = {
+        visible_to_supplier: rows[0].visible_to_supplier,
+        visible_to_customer: rows[0].visible_to_customer,
+        visible_to_accountant: rows[0].visible_to_accountant,
+      }
+
+      await applyCategoryVisibilityToFiles(categoryCode, categoryVisibility)
+    }
+
+    return NextResponse.json({
+      ...(checklistRow ?? {}),
+      ...categoryVisibility,
+    })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

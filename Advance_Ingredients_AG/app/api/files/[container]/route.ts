@@ -7,6 +7,7 @@ import {
   ALLOWED_MIME_TYPES, MAX_FILE_SIZE,
 } from '@/lib/file-storage'
 import {
+  getCategoryVisibilityDefaults,
   ensureChecklistForContainer,
   normalizeFileCategoryCode,
 } from '@/lib/file-checklist'
@@ -98,6 +99,9 @@ export const GET = withAuth(async (_req, user: JWTPayload, context) => {
            categories.label_zh,
            categories.sort_order,
            categories.required,
+           categories.visible_to_supplier,
+           categories.visible_to_customer,
+           categories.visible_to_accountant,
            checklist.status,
            checklist.note,
            checklist.updated_by::text,
@@ -116,6 +120,9 @@ export const GET = withAuth(async (_req, user: JWTPayload, context) => {
            categories.label_zh,
            categories.sort_order,
            categories.required,
+           categories.visible_to_supplier,
+           categories.visible_to_customer,
+           categories.visible_to_accountant,
            checklist.status,
            checklist.note,
            checklist.updated_by,
@@ -176,8 +183,6 @@ export const POST = withAuth(async (req, user: JWTPayload, context) => {
 
     ensureOrderDir(year, month, container)
 
-    // Supplier uploads are visible to supplier (and admin/staff) by default
-    const visibleToSupplier = user.role === 'supplier'
     const uploaded: unknown[] = []
     const failed: Array<{ filename: string; error: string }> = []
 
@@ -185,6 +190,7 @@ export const POST = withAuth(async (req, user: JWTPayload, context) => {
       const storedName = generateStoredName(file.name)
       const filePath = getFilePath(year, month, container, storedName)
       const categoryCode = normalizeFileCategoryCode(formData.get(`category:${file.name}`) ?? formData.get('category_code'))
+      const categoryVisibility = await getCategoryVisibilityDefaults(categoryCode)
 
       try {
         const buffer = Buffer.from(await file.arrayBuffer())
@@ -192,9 +198,31 @@ export const POST = withAuth(async (req, user: JWTPayload, context) => {
 
         const { rows } = await pool.query(
           `INSERT INTO order_files
-             (container_number, filename, stored_name, file_size, mime_type, uploaded_by, category_code, visible_to_supplier, visible_to_customer)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING *`,
-          [container, file.name, storedName, file.size, file.type, user.userId, categoryCode, visibleToSupplier]
+             (
+               container_number,
+               filename,
+               stored_name,
+               file_size,
+               mime_type,
+               uploaded_by,
+               category_code,
+               visible_to_supplier,
+               visible_to_customer,
+               visible_to_accountant
+             )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+          [
+            container,
+            file.name,
+            storedName,
+            file.size,
+            file.type,
+            user.userId,
+            categoryCode,
+            categoryVisibility.visible_to_supplier,
+            categoryVisibility.visible_to_customer,
+            categoryVisibility.visible_to_accountant,
+          ]
         )
 
         uploaded.push(rows[0])

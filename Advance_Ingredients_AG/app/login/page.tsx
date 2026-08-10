@@ -11,17 +11,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requestHint, setRequestHint] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading) return
+
     setError('')
+    setRequestHint('')
     setLoading(true)
+    let shouldResetLoading = true
+
+    const controller = new AbortController()
+    const slowTimer = window.setTimeout(() => {
+      setRequestHint('Network looks slow. Still trying... / 网络较慢，仍在尝试登录...')
+    }, 4000)
+    const abortTimer = window.setTimeout(() => {
+      controller.abort()
+    }, 15000)
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, password }),
+        signal: controller.signal,
       })
 
       const data = await res.json()
@@ -31,11 +45,23 @@ export default function LoginPage() {
         return
       }
 
-      router.push(data.redirect)
-    } catch {
-      setError('Network error / 网络错误')
+      shouldResetLoading = false
+      setRequestHint('Login successful. Redirecting... / 登录成功，正在跳转...')
+      router.replace(data.redirect)
+      router.refresh()
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Login request timed out. Please retry. / 登录请求超时，请重试。')
+      } else {
+        setError('Network error. Please retry. / 网络错误，请重试。')
+      }
     } finally {
-      setLoading(false)
+      window.clearTimeout(slowTimer)
+      window.clearTimeout(abortTimer)
+      if (shouldResetLoading) {
+        setRequestHint('')
+        setLoading(false)
+      }
     }
   }
 
@@ -68,6 +94,7 @@ export default function LoginPage() {
               value={name}
               onChange={e => setName(e.target.value)}
               required
+              disabled={loading}
               autoComplete="username"
               className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Enter your username"
@@ -83,6 +110,7 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              disabled={loading}
               autoComplete="current-password"
               className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               placeholder="Enter your password"
@@ -93,6 +121,15 @@ export default function LoginPage() {
             <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2">
               {error}
             </p>
+          )}
+
+          {loading && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-800">
+              <p>{requestHint || 'Submitting login request... / 正在提交登录请求...'}</p>
+              <p className="mt-1 text-xs text-blue-700">
+                Please wait and do not click repeatedly. / 请稍候，不要重复点击。
+              </p>
+            </div>
           )}
 
           <button

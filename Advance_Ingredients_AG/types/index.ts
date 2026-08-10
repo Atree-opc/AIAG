@@ -115,6 +115,9 @@ export interface OrderFileCategory {
   label_zh: string
   sort_order: number
   required: boolean
+  visible_to_supplier: boolean
+  visible_to_customer: boolean
+  visible_to_accountant: boolean
 }
 
 export interface OrderFileChecklistItem {
@@ -124,6 +127,9 @@ export interface OrderFileChecklistItem {
   label_zh: string
   sort_order: number
   required: boolean
+  visible_to_supplier: boolean
+  visible_to_customer: boolean
+  visible_to_accountant: boolean
   status: FileChecklistStatus
   note: string | null
   updated_by: string | null

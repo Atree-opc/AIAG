@@ -98,6 +98,9 @@ CREATE TABLE IF NOT EXISTS order_file_categories (
   label_zh        VARCHAR(100) NOT NULL,
   sort_order      INT NOT NULL DEFAULT 0,
   required        BOOLEAN NOT NULL DEFAULT true,
+  visible_to_supplier   BOOLEAN NOT NULL DEFAULT false,
+  visible_to_customer   BOOLEAN NOT NULL DEFAULT false,
+  visible_to_accountant BOOLEAN NOT NULL DEFAULT false,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -117,10 +120,12 @@ CREATE INDEX IF NOT EXISTS idx_order_file_checklist_container_category ON order_
 INSERT INTO order_file_categories (category_code, label_en, label_zh, sort_order, required) VALUES
   ('contract', 'Contract', '合同', 1, true),
   ('invoice', 'Invoice', '发票', 2, true),
-  ('bill_of_exchange', 'Bill of Exchange', '汇票', 3, true),
-  ('ippc', 'IPPC', 'IPPC', 4, true),
-  ('scanned_copy', 'Scanned Copy', '扫描件', 5, true),
-  ('lc', 'L/C', '信用证', 6, true),
+  ('df_invoice', 'DF Invoice', 'DF发票', 3, true),
+  ('bill_of_exchange', 'Bill of Exchange', '汇票', 4, true),
+  ('ippc', 'IPPC', 'IPPC', 5, true),
+  ('scanned_copy', 'Scanned Copy', '扫描件', 6, true),
+  ('lc', 'L/C', '信用证', 7, true),
+  ('lc_payment_fee_proof', 'L/C Payment Proof & Fees', '信用证付款证明与手续费', 8, false),
   ('uncategorized', 'Uncategorized', '未分类', 99, false)
 ON CONFLICT (category_code) DO NOTHING;
 
