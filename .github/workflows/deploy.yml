@@ -1,0 +1,55 @@
+name: Deploy to production
+
+# 先只允许手动触发，测通后再加 push 自动触发
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Rsync source to server (protect storage and secrets)
+        run: |
+          rsync -az --no-perms --no-owner --no-group \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='storage' \
+            --exclude='.env.local' \
+            --exclude='backups' \
+            --exclude='deploy/postgres/.env' \
+            ./Advance_Ingredients_AG/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/ubuntu/AIAG/Advance_Ingredients_AG/"
+
+      - name: Install, build and restart on server
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash -s <<'EOF'
+          set -e
+          cd /home/ubuntu/AIAG/Advance_Ingredients_AG
+          echo "== npm ci =="
+          /usr/bin/npm ci
+          echo "== npm run build =="
+          /usr/bin/npm run build
+          echo "== restart service =="
+          sudo /usr/bin/systemctl restart aiag
+          sleep 6
+          echo "== health check =="
+          code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || echo 000)
+          echo "HTTP $code"
+          test "$code" = "200"
+          EOF
